@@ -1,0 +1,25 @@
+diff -rupN linux-3.10.23/sound/pci/hda/hda_generic.c linux-3.10.23jog/sound/pci/hda/hda_generic.c
+--- linux-3.10.23/sound/pci/hda/hda_generic.c	2013-12-08 16:17:21.000000000 +0000
++++ linux-3.10.23jog/sound/pci/hda/hda_generic.c	2013-12-09 10:38:06.514871942 +0000
+@@ -782,6 +782,9 @@ static void path_power_down_sync(struct
+ /* turn on/off EAPD on the given pin */
+ static void set_pin_eapd(struct hda_codec *codec, hda_nid_t pin, bool enable)
+ {
++
++	pin = 0x07;  // Joggler Workaround
++
+ 	struct hda_gen_spec *spec = codec->spec;
+ 	if (spec->own_eapd_ctl ||
+ 	    !(snd_hda_query_pin_caps(codec, pin) & AC_PINCAP_EAPD))
+diff -rupN linux-3.10.23/sound/pci/hda/patch_sigmatel.c linux-3.10.23jog/sound/pci/hda/patch_sigmatel.c
+--- linux-3.10.23/sound/pci/hda/patch_sigmatel.c	2013-12-08 16:17:21.000000000 +0000
++++ linux-3.10.23jog/sound/pci/hda/patch_sigmatel.c	2013-12-09 10:38:37.688887441 +0000
+@@ -3818,7 +3818,7 @@ static int patch_stac925x(struct hda_cod
+ 
+ 	spec = codec->spec;
+ 	spec->linear_tone_beep = 1;
+-	spec->gen.own_eapd_ctl = 1;
++	// spec->gen.own_eapd_ctl = 1;  // Joggler Workaround
+ 
+ 	codec->patch_ops = stac_patch_ops;
+ 
