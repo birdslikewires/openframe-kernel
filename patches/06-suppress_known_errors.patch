@@ -1,0 +1,98 @@
+diff -rupN linux-3.16.60/arch/x86/platform/efi/efi.c linux-3.16.60op/arch/x86/platform/efi/efi.c
+--- linux-3.16.60/arch/x86/platform/efi/efi.c	2018-10-21 08:46:24.000000000 +0100
++++ linux-3.16.60op/arch/x86/platform/efi/efi.c	2018-10-22 20:41:29.000000000 +0100
+@@ -850,9 +850,9 @@ void __init old_map_region(efi_memory_de
+ 				 md->type, md->attribute);
+ 
+ 	md->virt_addr = (u64) (unsigned long) va;
+-	if (!va)
+-		pr_err("ioremap of 0x%llX failed!\n",
+-		       (unsigned long long)md->phys_addr);
++	// if (!va)
++	// 	pr_err("ioremap of 0x%llX failed!\n",
++	// 	       (unsigned long long)md->phys_addr);
+ }
+ 
+ static void native_runtime_setup(void)
+diff -rupN linux-3.16.60/drivers/gpu/drm/drm_edid.c linux-3.16.60op/drivers/gpu/drm/drm_edid.c
+--- linux-3.16.60/drivers/gpu/drm/drm_edid.c	2018-10-21 08:46:24.000000000 +0100
++++ linux-3.16.60op/drivers/gpu/drm/drm_edid.c	2018-10-22 20:44:46.000000000 +0100
+@@ -1092,11 +1092,11 @@ bool drm_edid_block_valid(u8 *raw_edid, 
+ 	return true;
+ 
+ bad:
+-	if (print_bad_edid) {
+-		printk(KERN_ERR "Raw EDID:\n");
+-		print_hex_dump(KERN_ERR, " \t", DUMP_PREFIX_NONE, 16, 1,
+-			       raw_edid, EDID_LENGTH, false);
+-	}
++	// if (print_bad_edid) {
++	// 	printk(KERN_ERR "Raw EDID:\n");
++	// 	print_hex_dump(KERN_ERR, " \t", DUMP_PREFIX_NONE, 16, 1,
++	// 		       raw_edid, EDID_LENGTH, false);
++	// }
+ 	return false;
+ }
+ EXPORT_SYMBOL(drm_edid_block_valid);
+diff -rupN linux-3.16.60/drivers/gpu/drm/gma500/intel_bios.c linux-3.16.60op/drivers/gpu/drm/gma500/intel_bios.c
+--- linux-3.16.60/drivers/gpu/drm/gma500/intel_bios.c	2018-10-21 08:46:24.000000000 +0100
++++ linux-3.16.60op/drivers/gpu/drm/gma500/intel_bios.c	2018-10-22 20:44:10.000000000 +0100
+@@ -561,7 +561,7 @@ int psb_intel_init_bios(struct drm_devic
+ 		}
+ 
+ 		if (!vbt) {
+-			dev_err(dev->dev, "VBT signature missing\n");
++			//dev_err(dev->dev, "VBT signature missing\n");
+ 			pci_unmap_rom(pdev, bios);
+ 			return -1;
+ 		}
+diff -rupN linux-3.16.60/drivers/gpu/drm/gma500/psb_irq.c linux-3.16.60op/drivers/gpu/drm/gma500/psb_irq.c
+--- linux-3.16.60/drivers/gpu/drm/gma500/psb_irq.c	2018-10-21 08:46:24.000000000 +0100
++++ linux-3.16.60op/drivers/gpu/drm/gma500/psb_irq.c	2018-10-22 20:45:45.000000000 +0100
+@@ -654,8 +654,8 @@ u32 psb_get_vblank_counter(struct drm_de
+ 	reg_val = REG_READ(pipeconf_reg);
+ 
+ 	if (!(reg_val & PIPEACONF_ENABLE)) {
+-		dev_err(dev->dev, "trying to get vblank count for disabled pipe %d\n",
+-								pipe);
++		// dev_err(dev->dev, "trying to get vblank count for disabled pipe %d\n",
++		// 						pipe);
+ 		goto psb_get_vblank_counter_exit;
+ 	}
+ 
+diff -rupN linux-3.16.60/drivers/hid/usbhid/hid-core.c linux-3.16.60op/drivers/hid/usbhid/hid-core.c
+--- linux-3.16.60/drivers/hid/usbhid/hid-core.c	2018-10-21 08:46:24.000000000 +0100
++++ linux-3.16.60op/drivers/hid/usbhid/hid-core.c	2018-10-22 20:46:29.000000000 +0100
+@@ -1296,7 +1296,7 @@ static int usbhid_probe(struct usb_inter
+ 		if (usb_endpoint_is_int_in(&interface->endpoint[n].desc))
+ 			has_in++;
+ 	if (!has_in) {
+-		hid_err(intf, "couldn't find an input interrupt endpoint\n");
++		//hid_err(intf, "couldn't find an input interrupt endpoint\n");
+ 		return -ENODEV;
+ 	}
+ 
+diff -rupN linux-3.16.60/drivers/input/serio/i8042.c linux-3.16.60op/drivers/input/serio/i8042.c
+--- linux-3.16.60/drivers/input/serio/i8042.c	2018-10-21 08:46:24.000000000 +0100
++++ linux-3.16.60op/drivers/input/serio/i8042.c	2018-10-22 20:42:03.000000000 +0100
+@@ -877,7 +877,7 @@ static int __init i8042_check_aux(void)
+ static int i8042_controller_check(void)
+ {
+ 	if (i8042_flush()) {
+-		pr_err("No controller found\n");
++		//pr_err("No controller found\n");
+ 		return -ENODEV;
+ 	}
+ 
+diff -rupN linux-3.16.60/drivers/pci/rom.c linux-3.16.60op/drivers/pci/rom.c
+--- linux-3.16.60/drivers/pci/rom.c	2018-10-21 08:46:24.000000000 +0100
++++ linux-3.16.60op/drivers/pci/rom.c	2018-10-22 20:42:55.000000000 +0100
+@@ -78,7 +78,7 @@ size_t pci_get_rom_size(struct pci_dev *
+ 		void __iomem *pds;
+ 		/* Standard PCI ROMs start out with these bytes 55 AA */
+ 		if (readb(image) != 0x55) {
+-			dev_err(&pdev->dev, "Invalid ROM contents\n");
++			//dev_err(&pdev->dev, "Invalid ROM contents\n");
+ 			break;
+ 		}
+ 		if (readb(image + 1) != 0xAA)
