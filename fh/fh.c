@@ -10,14 +10,18 @@
  * Intel E82802AC8
  * SST   49LF008A
  */
+
+#include <linux/delay.h>
+#include <linux/slab.h>
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/miscdevice.h>
 #include <linux/fs.h>
 
-#include <asm/semaphore.h>
-#include <asm/uaccess.h>
-#include <asm/io.h>
+#include <linux/semaphore.h>
+#include <linux/uaccess.h>
+#include <linux/io.h>
 
 #define FH_DATA_PHYS		0xFFF00000
 #define FH_DATA_SIZE		0x00100000

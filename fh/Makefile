@@ -4,15 +4,20 @@
 # Build the firmware hub driver
 #
 
-MOD	= fh
+MOD = fh
 
-#include $(TOP)/Makefile.master
+PWD := $(shell pwd)
+KDIR := /lib/modules/$(shell uname -r)/build
 
-obj-m	+= $(MOD).o
+obj-m += $(MOD).o
 
-all:
-	make -C $(TOP)/$(LINUX) $(LINUX_MARGS) SUBDIRS=$(PWD) modules
+default:
+	        $(MAKE) -C $(KDIR) M=$(PWD) modules
+
+install:
+		$(MAKE) -C $(KDIR) M=$(PWD) modules_install
+		depmod -a
 
 clean:
 	rm -f .fh.ko.cmd .fh.mod.o.cmd .fh.o.cmd Module.symvers fh.ko fh.mod.c fh.mod.o fh.o
-	rm -rf .tmp_versions
+	rm -rf .tmp_versions modules.order
