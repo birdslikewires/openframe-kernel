@@ -96,3 +96,70 @@ diff -rupN linux-3.16.60/drivers/pci/rom.c linux-3.16.60op/drivers/pci/rom.c
  			break;
  		}
  		if (readb(image + 1) != 0xAA)
+
+diff -rupN linux-3.16.60/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c linux-3.16.60op/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
+--- linux-3.16.60/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c	2019-07-03 09:48:46.546312672 +0100
++++ linux-3.16.60op/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c	2019-07-03 10:37:13.850490011 +0100
+@@ -539,10 +539,6 @@ static int brcms_ops_config(struct ieee8
+ 		brcms_dbg_info(core, "%s: change monitor mode: %s\n",
+ 			       __func__, conf->flags & IEEE80211_CONF_MONITOR ?
+ 			       "true" : "false");
+-	if (changed & IEEE80211_CONF_CHANGE_PS)
+-		brcms_err(core, "%s: change power-save mode: %s (implement)\n",
+-			  __func__, conf->flags & IEEE80211_CONF_PS ?
+-			  "true" : "false");
+ 
+ 	if (changed & IEEE80211_CONF_CHANGE_POWER) {
+ 		err = brcms_c_set_tx_power(wl->wlc, conf->power_level);
+@@ -588,8 +584,6 @@ brcms_ops_bss_info_changed(struct ieee80
+ 		/* association status changed (associated/disassociated)
+ 		 * also implies a change in the AID.
+ 		 */
+-		brcms_err(core, "%s: %s: %sassociated\n", KBUILD_MODNAME,
+-			  __func__, info->assoc ? "" : "dis");
+ 		spin_lock_bh(&wl->lock);
+ 		brcms_c_associate_upd(wl->wlc, info->assoc);
+ 		spin_unlock_bh(&wl->lock);
+@@ -692,8 +686,6 @@ brcms_ops_bss_info_changed(struct ieee80
+ 
+ 	if (changed & BSS_CHANGED_BEACON_ENABLED) {
+ 		/* Beaconing should be enabled/disabled (beaconing modes) */
+-		brcms_err(core, "%s: Beacon enabled: %s\n", __func__,
+-			  info->enable_beacon ? "true" : "false");
+ 		if (info->enable_beacon &&
+ 		    hw->wiphy->flags & WIPHY_FLAG_AP_PROBE_RESP_OFFLOAD) {
+ 			brcms_c_enable_probe_resp(wl->wlc, true);
+@@ -702,33 +694,6 @@ brcms_ops_bss_info_changed(struct ieee80
+ 		}
+ 	}
+ 
+-	if (changed & BSS_CHANGED_CQM) {
+-		/* Connection quality monitor config changed */
+-		brcms_err(core, "%s: cqm change: threshold %d, hys %d "
+-			  " (implement)\n", __func__, info->cqm_rssi_thold,
+-			  info->cqm_rssi_hyst);
+-	}
+-
+-	if (changed & BSS_CHANGED_IBSS) {
+-		/* IBSS join status changed */
+-		brcms_err(core, "%s: IBSS joined: %s (implement)\n",
+-			  __func__, info->ibss_joined ? "true" : "false");
+-	}
+-
+-	if (changed & BSS_CHANGED_ARP_FILTER) {
+-		/* Hardware ARP filter address list or state changed */
+-		brcms_err(core, "%s: arp filtering: %d addresses"
+-			  " (implement)\n", __func__, info->arp_addr_cnt);
+-	}
+-
+-	if (changed & BSS_CHANGED_QOS) {
+-		/*
+-		 * QoS for this association was enabled/disabled.
+-		 * Note that it is only ever disabled for station mode.
+-		 */
+-		brcms_err(core, "%s: qos enabled: %s (implement)\n",
+-			  __func__, info->qos ? "true" : "false");
+-	}
+ 	return;
+ }
+ 
