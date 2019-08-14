@@ -1,6 +1,6 @@
 # Kernel Patches for OpenFrame
 
-These patches should be sufficient to get you compiling a new Linux kernel on your lovely **OpenFrame** device from OpenPeak. The long term **3.16** or **3.18** branches are tested and recommended, for ALSA reasons, explained below.
+These patches should be sufficient to get you compiling a new Linux kernel on your lovely **OpenFrame** device from OpenPeak. The long term **3.16** branch is tested and recommended, for ALSA reasons, explained below.
 
 The patches include Andrew de Quincey's OpenFrame backlight driver, a pin tweak which enables line output switching on the STAC9202 audio IC inside the OpenFrame 1, plus a twiddle to get the I2C bus to play nicely, which gets the ambient light sensor working.
 
