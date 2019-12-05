@@ -1,0 +1,84 @@
+diff -rupN linux-5.4.2-orig/arch/x86/platform/efi/efi.c linux-5.4.2/arch/x86/platform/efi/efi.c
+--- linux-5.4.2-orig/arch/x86/platform/efi/efi.c	2019-12-04 21:31:09.000000000 +0000
++++ linux-5.4.2/arch/x86/platform/efi/efi.c	2019-12-05 11:39:53.554023823 +0000
+@@ -627,9 +627,9 @@ void __init old_map_region(efi_memory_de
+ 				 md->type, md->attribute);
+ 
+ 	md->virt_addr = (u64) (unsigned long) va;
+-	if (!va)
+-		pr_err("ioremap of 0x%llX failed!\n",
+-		       (unsigned long long)md->phys_addr);
++	//if (!va)
++	//	pr_err("ioremap of 0x%llX failed!\n",
++	//	       (unsigned long long)md->phys_addr);
+ }
+ 
+ /* Merge contiguous regions of the same type and attribute */
+diff -rupN linux-5.4.2-orig/drivers/gpu/drm/drm_edid.c linux-5.4.2/drivers/gpu/drm/drm_edid.c
+--- linux-5.4.2-orig/drivers/gpu/drm/drm_edid.c	2019-12-04 21:31:09.000000000 +0000
++++ linux-5.4.2/drivers/gpu/drm/drm_edid.c	2019-12-05 11:42:34.009476601 +0000
+@@ -1447,16 +1447,16 @@ bool drm_edid_block_valid(u8 *raw_edid,
+ 	return true;
+ 
+ bad:
+-	if (print_bad_edid) {
+-		if (drm_edid_is_zero(raw_edid, EDID_LENGTH)) {
+-			pr_notice("EDID block is all zeroes\n");
+-		} else {
+-			pr_notice("Raw EDID:\n");
+-			print_hex_dump(KERN_NOTICE,
+-				       " \t", DUMP_PREFIX_NONE, 16, 1,
+-				       raw_edid, EDID_LENGTH, false);
+-		}
+-	}
++	//if (print_bad_edid) {
++	//	if (drm_edid_is_zero(raw_edid, EDID_LENGTH)) {
++	//		pr_notice("EDID block is all zeroes\n");
++	//	} else {
++	//		pr_notice("Raw EDID:\n");
++	//		print_hex_dump(KERN_NOTICE,
++	//			       " \t", DUMP_PREFIX_NONE, 16, 1,
++	//			       raw_edid, EDID_LENGTH, false);
++	//	}
++	//}
+ 	return false;
+ }
+ EXPORT_SYMBOL(drm_edid_block_valid);
+diff -rupN linux-5.4.2-orig/drivers/gpu/drm/gma500/intel_bios.c linux-5.4.2/drivers/gpu/drm/gma500/intel_bios.c
+--- linux-5.4.2-orig/drivers/gpu/drm/gma500/intel_bios.c	2019-12-04 21:31:09.000000000 +0000
++++ linux-5.4.2/drivers/gpu/drm/gma500/intel_bios.c	2019-12-05 11:41:25.349111689 +0000
+@@ -551,7 +551,7 @@ int psb_intel_init_bios(struct drm_devic
+ 		}
+ 
+ 		if (!vbt) {
+-			dev_err(dev->dev, "VBT signature missing\n");
++			//dev_err(dev->dev, "VBT signature missing\n");
+ 			pci_unmap_rom(pdev, bios);
+ 			return -1;
+ 		}
+diff -rupN linux-5.4.2-orig/drivers/gpu/drm/gma500/psb_irq.c linux-5.4.2/drivers/gpu/drm/gma500/psb_irq.c
+--- linux-5.4.2-orig/drivers/gpu/drm/gma500/psb_irq.c	2019-12-04 21:31:09.000000000 +0000
++++ linux-5.4.2/drivers/gpu/drm/gma500/psb_irq.c	2019-12-05 11:43:38.330097424 +0000
+@@ -641,8 +641,8 @@ u32 psb_get_vblank_counter(struct drm_de
+ 	reg_val = REG_READ(pipeconf_reg);
+ 
+ 	if (!(reg_val & PIPEACONF_ENABLE)) {
+-		dev_err(dev->dev, "trying to get vblank count for disabled pipe %u\n",
+-								pipe);
++		//dev_err(dev->dev, "trying to get vblank count for disabled pipe %u\n",
++		//						pipe);
+ 		goto psb_get_vblank_counter_exit;
+ 	}
+ 
+diff -rupN linux-5.4.2-orig/drivers/hid/usbhid/hid-core.c linux-5.4.2/drivers/hid/usbhid/hid-core.c
+--- linux-5.4.2-orig/drivers/hid/usbhid/hid-core.c	2019-12-04 21:31:09.000000000 +0000
++++ linux-5.4.2/drivers/hid/usbhid/hid-core.c	2019-12-05 11:37:49.776761354 +0000
+@@ -1314,7 +1314,7 @@ static int usbhid_probe(struct usb_inter
+ 		if (usb_endpoint_is_int_in(&interface->endpoint[n].desc))
+ 			has_in++;
+ 	if (!has_in) {
+-		hid_err(intf, "couldn't find an input interrupt endpoint\n");
++		//hid_err(intf, "couldn't find an input interrupt endpoint\n");
+ 		return -ENODEV;
+ 	}
+ 
