@@ -1,7 +1,7 @@
-diff -rupN linux-3.15.3-orig/drivers/gpu/drm/gma500/backlight.c linux-3.15.3/drivers/gpu/drm/gma500/backlight.c
---- linux-3.15.3-orig/drivers/gpu/drm/gma500/backlight.c	2014-07-01 04:14:09.000000000 +0100
-+++ linux-3.15.3/drivers/gpu/drm/gma500/backlight.c	2014-07-04 12:48:09.749681018 +0100
-@@ -26,6 +26,8 @@
+diff -rupN linux-5.10.100-orig/drivers/gpu/drm/gma500/backlight.c linux-5.10.100/drivers/gpu/drm/gma500/backlight.c
+--- linux-5.10.100-orig/drivers/gpu/drm/gma500/backlight.c	2022-02-11 08:09:03.000000000 +0000
++++ linux-5.10.100/drivers/gpu/drm/gma500/backlight.c	2022-02-18 01:07:00.940718969 +0000
+@@ -13,6 +13,8 @@
  #include "intel_bios.h"
  #include "power.h"
  
@@ -10,10 +10,10 @@ diff -rupN linux-3.15.3-orig/drivers/gpu/drm/gma500/backlight.c linux-3.15.3/dri
  #ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
  static void do_gma_backlight_set(struct drm_device *dev)
  {
-diff -rupN linux-3.15.3-orig/drivers/gpu/drm/gma500/psb_device.c linux-3.15.3/drivers/gpu/drm/gma500/psb_device.c
---- linux-3.15.3-orig/drivers/gpu/drm/gma500/psb_device.c	2014-07-01 04:14:09.000000000 +0100
-+++ linux-3.15.3/drivers/gpu/drm/gma500/psb_device.c	2014-07-04 12:47:59.045680876 +0100
-@@ -75,6 +75,8 @@ static int psb_backlight_setup(struct dr
+diff -rupN linux-5.10.100-orig/drivers/gpu/drm/gma500/psb_device.c linux-5.10.100/drivers/gpu/drm/gma500/psb_device.c
+--- linux-5.10.100-orig/drivers/gpu/drm/gma500/psb_device.c	2022-02-11 08:09:03.000000000 +0000
++++ linux-5.10.100/drivers/gpu/drm/gma500/psb_device.c	2022-02-18 01:08:02.294203316 +0000
+@@ -63,6 +63,8 @@ static int psb_backlight_setup(struct dr
  	uint32_t value;
  	uint32_t blc_pwm_precision_factor;
  
