@@ -1,6 +1,6 @@
-diff -rupN /home/build/kernel/linux-5.10.117-orig/arch/x86/platform/efi/efi_32.c /home/build/kernel/linux-5.10.117/arch/x86/platform/efi/efi_32.c
---- /home/build/kernel/linux-5.10.117-orig/arch/x86/platform/efi/efi_32.c	2022-05-22 00:51:24.907530974 +0100
-+++ /home/build/kernel/linux-5.10.117/arch/x86/platform/efi/efi_32.c	2022-05-22 00:56:50.143047688 +0100
+diff -rupN linux-5.10.117-orig/arch/x86/platform/efi/efi_32.c linux-5.10.117/arch/x86/platform/efi/efi_32.c
+--- linux-5.10.117-orig/arch/x86/platform/efi/efi_32.c	2022-05-22 00:51:24.907530974 +0100
++++ linux-5.10.117/arch/x86/platform/efi/efi_32.c	2022-05-22 00:56:50.143047688 +0100
 @@ -54,8 +54,8 @@ void __init efi_map_region(efi_memory_de
  	}
  
@@ -12,9 +12,9 @@ diff -rupN /home/build/kernel/linux-5.10.117-orig/arch/x86/platform/efi/efi_32.c
  }
  
  /*
-diff -rupN /home/build/kernel/linux-5.10.117-orig/drivers/hid/usbhid/hid-core.c /home/build/kernel/linux-5.10.117/drivers/hid/usbhid/hid-core.c
---- /home/build/kernel/linux-5.10.117-orig/drivers/hid/usbhid/hid-core.c	2022-05-22 00:51:25.695549380 +0100
-+++ /home/build/kernel/linux-5.10.117/drivers/hid/usbhid/hid-core.c	2022-05-22 00:59:28.471379440 +0100
+diff -rupN linux-5.10.117-orig/drivers/hid/usbhid/hid-core.c linux-5.10.117/drivers/hid/usbhid/hid-core.c
+--- linux-5.10.117-orig/drivers/hid/usbhid/hid-core.c	2022-05-22 00:51:25.695549380 +0100
++++ linux-5.10.117/drivers/hid/usbhid/hid-core.c	2022-05-22 00:59:28.471379440 +0100
 @@ -1345,7 +1345,7 @@ static int usbhid_probe(struct usb_inter
  		if (usb_endpoint_is_int_in(&interface->endpoint[n].desc))
  			has_in++;
