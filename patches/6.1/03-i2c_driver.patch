@@ -1,0 +1,21 @@
+diff -rupN linux-5.10.100-orig/drivers/i2c/busses/i2c-isch.c linux-5.10.100/drivers/i2c/busses/i2c-isch.c
+--- linux-5.10.100-orig/drivers/i2c/busses/i2c-isch.c	2022-02-11 08:09:03.000000000 +0000
++++ linux-5.10.100/drivers/i2c/busses/i2c-isch.c	2022-02-18 01:12:40.809116344 +0000
+@@ -44,6 +44,8 @@
+ #define SCH_WORD_DATA		0x03
+ #define SCH_BLOCK_DATA		0x05
+ 
++#define SMBIOSIZE	8  // OpenFrame Workaround
++
+ static unsigned short sch_smba;
+ static struct i2c_adapter sch_adapter;
+ static int backbone_speed = 33000; /* backbone speed in kHz */
+@@ -262,7 +264,7 @@ static int smbus_sch_probe(struct platfo
+ 	if (!res)
+ 		return -EBUSY;
+ 
+-	if (!devm_request_region(&dev->dev, res->start, resource_size(res),
++	if (!devm_request_region(&dev->dev, res->start, SMBIOSIZE,
+ 				 dev->name)) {
+ 		dev_err(&dev->dev, "SMBus region 0x%x already in use!\n",
+ 			sch_smba);
