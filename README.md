@@ -1,6 +1,12 @@
 # Kernel Patches for OpenFrame
 
-These patches should be sufficient to get you compiling a new Linux kernel for your lovely **OpenFrame** device from OpenPeak. I recommend the long term **5.10** branch, which matches nicely with Debian Bullseye.
+These patches should be sufficient to get you compiling a new Linux kernel which works with your lovely **OpenFrame** device from OpenPeak.
+
+## Compiled Versions
+
+Packages in .deb format should be [available from my build system](http://openbeak.net/openframe/kernel/). Newly released kernels are compiled in the early hours of a UK morning. Kernels from branch 5.10 are built with Debian Bullseye in mind, while 6.1 is for Bookworm.
+
+## Patches
 
 The patches include Andrew de Quincey's OpenFrame backlight driver, a pin tweak which enables line output switching on the STAC9202 audio IC inside the OpenFrame 1, plus a twiddle to get the I2C bus to play nicely, which gets the ambient light sensor working.
 
@@ -18,15 +24,10 @@ Which will bring that .config file up to date with the latest defaults. Then you
 	
 To apply any changes you would like to make in a graphical interface.
 
-You'll also need a 32-bit x86 build environment; a chroot on an Ubuntu 18.04 system has been working fine for me.
+You'll also need a 32-bit x86 build environment, which can be achieved with a chroot on 64-bit systems.
 
 Once you have everything together, compile with:
 
 	make -j`nproc` deb-pkg
 
-You can use the resulting linux-image and linux-headers .deb packages with the scripts in the openframe-ubuntu repo to create an image which, hopefully, works.
-
-
-## Precompiled Versions?
-
-Compiled debian packages should be [available from my website](https://birdslikewires.net/download/openframe/kernel/).
+This will compile the kernel and generate the .deb packages.
