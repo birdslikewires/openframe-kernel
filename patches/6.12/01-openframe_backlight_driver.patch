@@ -68,7 +68,7 @@ diff -rupN linux-5.10.100-orig/drivers/video/backlight/openframe_bl.c linux-5.10
 +
 +	if (bd->props.power != FB_BLANK_UNBLANK)
 +		intensity = 0;
-+	if (bd->props.fb_blank != FB_BLANK_UNBLANK)
++	if (bd->props.blank != FB_BLANK_UNBLANK)
 +		intensity = 0;
 +
 +	*bl_baseptr = (intensity << 1) | 0x400000;
