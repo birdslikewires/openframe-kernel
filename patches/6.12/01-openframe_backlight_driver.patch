@@ -62,20 +62,6 @@ diff -rupN linux-5.10.100-orig/drivers/video/backlight/openframe_bl.c linux-5.10
 +static struct pci_dev *gfx_dev = NULL;
 +static u32 *bl_baseptr = NULL;
 +
-+static int openframe_set_intensity(struct backlight_device *bd)
-+{
-+	int intensity = bd->props.brightness;
-+
-+	if (bd->props.power != FB_BLANK_UNBLANK)
-+		intensity = 0;
-+	if (bd->props.blank != FB_BLANK_UNBLANK)
-+		intensity = 0;
-+
-+	*bl_baseptr = (intensity << 1) | 0x400000;
-+
-+	return 0;
-+}
-+
 +static int openframe_get_intensity(struct backlight_device *bd)
 +{
 +	int intensity;
@@ -106,7 +92,6 @@ diff -rupN linux-5.10.100-orig/drivers/video/backlight/openframe_bl.c linux-5.10
 +	bl_baseptr = ioremap(temp + 0x61254, 4);
 +	memset(&props, 0, sizeof(struct backlight_properties));
 +	props.max_brightness = 32;
-+	props.power = FB_BLANK_UNBLANK;
 +	props.type = BACKLIGHT_PLATFORM;
 +	props.brightness = 32;
 +	openframe_backlight_device = backlight_device_register("openframe-bl",
