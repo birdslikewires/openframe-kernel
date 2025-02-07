@@ -1,0 +1,26 @@
+diff -rupN linux-6.12.12-orig/arch/x86/platform/efi/efi_32.c linux-6.12.12/arch/x86/platform/efi/efi_32.c
+--- linux-6.12.12-orig/arch/x86/platform/efi/efi_32.c	2025-02-01 17:39:40.000000000 +0000
++++ linux-6.12.12/arch/x86/platform/efi/efi_32.c	2025-02-07 15:46:40.974373594 +0000
+@@ -54,8 +54,8 @@ void __init efi_map_region(efi_memory_de
+ 	}
+ 
+ 	md->virt_addr = (unsigned long)va;
+-	if (!va)
+-		pr_err("ioremap of 0x%llX failed!\n", md->phys_addr);
++	//if (!va)
++	//	pr_err("ioremap of 0x%llX failed!\n", md->phys_addr);
+ }
+ 
+ /*
+diff -rupN linux-6.12.12-orig/drivers/hid/usbhid/hid-core.c linux-6.12.12/drivers/hid/usbhid/hid-core.c
+--- linux-6.12.12-orig/drivers/hid/usbhid/hid-core.c	2025-02-01 17:39:40.000000000 +0000
++++ linux-6.12.12/drivers/hid/usbhid/hid-core.c	2025-02-07 15:47:27.382569976 +0000
+@@ -1357,7 +1357,7 @@ static int usbhid_probe(struct usb_inter
+ 		if (usb_endpoint_is_int_in(&interface->endpoint[n].desc))
+ 			has_in++;
+ 	if (!has_in) {
+-		hid_err(intf, "couldn't find an input interrupt endpoint\n");
++		//hid_err(intf, "couldn't find an input interrupt endpoint\n");
+ 		return -ENODEV;
+ 	}
+ 
