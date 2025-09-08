@@ -1,7 +1,7 @@
-diff -rupN linux-5.10.117-orig/arch/x86/platform/efi/efi_32.c linux-5.10.117/arch/x86/platform/efi/efi_32.c
---- linux-5.10.117-orig/arch/x86/platform/efi/efi_32.c	2022-05-22 00:51:24.907530974 +0100
-+++ linux-5.10.117/arch/x86/platform/efi/efi_32.c	2022-05-22 00:56:50.143047688 +0100
-@@ -54,8 +54,8 @@ void __init efi_map_region(efi_memory_de
+diff -rupN linux-6.1.150-orig/arch/x86/platform/efi/efi_32.c linux-6.1.150/arch/x86/platform/efi/efi_32.c
+--- linux-6.1.150-orig/arch/x86/platform/efi/efi_32.c	2025-09-04 14:26:31
++++ linux-6.1.150/arch/x86/platform/efi/efi_32.c	2025-09-08 15:00:14
+@@ -54,8 +54,8 @@ void __init efi_map_region(efi_memory_desc_t *md)
  	}
  
  	md->virt_addr = (unsigned long)va;
@@ -12,10 +12,134 @@ diff -rupN linux-5.10.117-orig/arch/x86/platform/efi/efi_32.c linux-5.10.117/arc
  }
  
  /*
-diff -rupN linux-5.10.117-orig/drivers/hid/usbhid/hid-core.c linux-5.10.117/drivers/hid/usbhid/hid-core.c
---- linux-5.10.117-orig/drivers/hid/usbhid/hid-core.c	2022-05-22 00:51:25.695549380 +0100
-+++ linux-5.10.117/drivers/hid/usbhid/hid-core.c	2022-05-22 00:59:28.471379440 +0100
-@@ -1345,7 +1345,7 @@ static int usbhid_probe(struct usb_inter
+diff -rupN linux-6.1.150-orig/drivers/acpi/acpica/tbfadt.c linux-6.1.150/drivers/acpi/acpica/tbfadt.c
+--- linux-6.1.150-orig/drivers/acpi/acpica/tbfadt.c	2025-09-04 14:26:31
++++ linux-6.1.150/drivers/acpi/acpica/tbfadt.c	2025-09-08 15:04:29
+@@ -558,16 +558,16 @@ static void acpi_tb_convert_fadt(void)
+ 				 * this check. (GPE registers can be larger than the
+ 				 * 64-bit GAS structure can accommodate, 0xFF bits).
+ 				 */
+-				if ((ACPI_MUL_8(length) <= ACPI_UINT8_MAX) &&
+-				    (address64->bit_width !=
+-				     ACPI_MUL_8(length))) {
+-					ACPI_BIOS_WARNING((AE_INFO,
+-							   "32/64X length mismatch in FADT/%s: %u/%u",
+-							   name,
+-							   ACPI_MUL_8(length),
+-							   address64->
+-							   bit_width));
+-				}
++				// if ((ACPI_MUL_8(length) <= ACPI_UINT8_MAX) &&
++				//     (address64->bit_width !=
++				//      ACPI_MUL_8(length))) {
++				// 	ACPI_BIOS_WARNING((AE_INFO,
++				// 			   "32/64X length mismatch in FADT/%s: %u/%u",
++				// 			   name,
++				// 			   ACPI_MUL_8(length),
++				// 			   address64->
++				// 			   bit_width));
++				// }
+ 			}
+ 
+ 			/*
+@@ -590,40 +590,40 @@ static void acpi_tb_convert_fadt(void)
+ 			}
+ 		}
+ 
+-		if (fadt_info_table[i].flags & ACPI_FADT_REQUIRED) {
+-			/*
+-			 * Field is required (Pm1a_event, Pm1a_control).
+-			 * Both the address and length must be non-zero.
+-			 */
+-			if (!address64->address || !length) {
+-				ACPI_BIOS_ERROR((AE_INFO,
+-						 "Required FADT field %s has zero address and/or length: "
+-						 "0x%8.8X%8.8X/0x%X",
+-						 name,
+-						 ACPI_FORMAT_UINT64(address64->
+-								    address),
+-						 length));
+-			}
+-		} else if (fadt_info_table[i].flags & ACPI_FADT_SEPARATE_LENGTH) {
+-			/*
+-			 * Field is optional (Pm2_control, GPE0, GPE1) AND has its own
+-			 * length field. If present, both the address and length must
+-			 * be valid.
+-			 */
+-			if ((address64->address && !length) ||
+-			    (!address64->address && length)) {
+-				ACPI_BIOS_WARNING((AE_INFO,
+-						   "Optional FADT field %s has valid %s but zero %s: "
+-						   "0x%8.8X%8.8X/0x%X", name,
+-						   (length ? "Length" :
+-						    "Address"),
+-						   (length ? "Address" :
+-						    "Length"),
+-						   ACPI_FORMAT_UINT64
+-						   (address64->address),
+-						   length));
+-			}
+-		}
++		// if (fadt_info_table[i].flags & ACPI_FADT_REQUIRED) {
++		// 	/*
++		// 	 * Field is required (Pm1a_event, Pm1a_control).
++		// 	 * Both the address and length must be non-zero.
++		// 	 */
++		// 	if (!address64->address || !length) {
++		// 		ACPI_BIOS_ERROR((AE_INFO,
++		// 				 "Required FADT field %s has zero address and/or length: "
++		// 				 "0x%8.8X%8.8X/0x%X",
++		// 				 name,
++		// 				 ACPI_FORMAT_UINT64(address64->
++		// 						    address),
++		// 				 length));
++		// 	}
++		// } else if (fadt_info_table[i].flags & ACPI_FADT_SEPARATE_LENGTH) {
++		// 	/*
++		// 	 * Field is optional (Pm2_control, GPE0, GPE1) AND has its own
++		// 	 * length field. If present, both the address and length must
++		// 	 * be valid.
++		// 	 */
++		// 	if ((address64->address && !length) ||
++		// 	    (!address64->address && length)) {
++		// 		ACPI_BIOS_WARNING((AE_INFO,
++		// 				   "Optional FADT field %s has valid %s but zero %s: "
++		// 				   "0x%8.8X%8.8X/0x%X", name,
++		// 				   (length ? "Length" :
++		// 				    "Address"),
++		// 				   (length ? "Address" :
++		// 				    "Length"),
++		// 				   ACPI_FORMAT_UINT64
++		// 				   (address64->address),
++		// 				   length));
++		// 	}
++		// }
+ 	}
+ }
+ 
+@@ -666,12 +666,12 @@ static void acpi_tb_setup_fadt_registers(void)
+ 			    (fadt_info_table[i].default_length > 0) &&
+ 			    (fadt_info_table[i].default_length !=
+ 			     target64->bit_width)) {
+-				ACPI_BIOS_WARNING((AE_INFO,
+-						   "Invalid length for FADT/%s: %u, using default %u",
+-						   fadt_info_table[i].name,
+-						   target64->bit_width,
+-						   fadt_info_table[i].
+-						   default_length));
++				// ACPI_BIOS_WARNING((AE_INFO,
++				// 		   "Invalid length for FADT/%s: %u, using default %u",
++				// 		   fadt_info_table[i].name,
++				// 		   target64->bit_width,
++				// 		   fadt_info_table[i].
++				// 		   default_length));
+ 
+ 				/* Incorrect size, set width to the default */
+ 
+diff -rupN linux-6.1.150-orig/drivers/hid/usbhid/hid-core.c linux-6.1.150/drivers/hid/usbhid/hid-core.c
+--- linux-6.1.150-orig/drivers/hid/usbhid/hid-core.c	2025-09-04 14:26:31
++++ linux-6.1.150/drivers/hid/usbhid/hid-core.c	2025-09-08 15:00:44
+@@ -1354,7 +1354,7 @@ static int usbhid_probe(struct usb_interface *intf, co
  		if (usb_endpoint_is_int_in(&interface->endpoint[n].desc))
  			has_in++;
  	if (!has_in) {
@@ -24,3 +148,19 @@ diff -rupN linux-5.10.117-orig/drivers/hid/usbhid/hid-core.c linux-5.10.117/driv
  		return -ENODEV;
  	}
  
+diff -rupN linux-6.1.150-orig/mm/vmalloc.c linux-6.1.150/mm/vmalloc.c
+--- linux-6.1.150-orig/mm/vmalloc.c	2025-09-04 14:26:31
++++ linux-6.1.150/mm/vmalloc.c	2025-09-08 15:06:08
+@@ -1674,9 +1674,9 @@ overflow:
+ 		goto retry;
+ 	}
+ 
+-	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit())
+-		pr_warn("vmap allocation for size %lu failed: use vmalloc=<size> to increase size\n",
+-			size);
++	// if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit())
++	// 	pr_warn("vmap allocation for size %lu failed: use vmalloc=<size> to increase size\n",
++	// 		size);
+ 
+ 	kmem_cache_free(vmap_area_cachep, va);
+ 	return ERR_PTR(-EBUSY);
