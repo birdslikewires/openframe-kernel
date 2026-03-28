@@ -1,0 +1,196 @@
+name: Build and Publish Kernel
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      kernel_version:
+        description: 'Kernel version to build (e.g. 6.1.166). Leave blank to auto-detect latest.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.version.outputs.should_build }}
+      kernel_version: ${{ steps.version.outputs.kernel_version }}
+    steps:
+      - name: Determine version to build
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "${{ inputs.kernel_version }}" ]; then
+            echo "Forced version: ${{ inputs.kernel_version }}"
+            echo "kernel_version=${{ inputs.kernel_version }}" >> $GITHUB_OUTPUT
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          LATEST=$(curl -s https://www.kernel.org/releases.json | \
+            jq -r '[.releases[] | select(.version | startswith("6.1"))] | first | .version')
+
+          LAST_TAG=$(gh release list \
+            --repo ${{ github.repository }} \
+            --limit 1 \
+            --json tagName \
+            -q '.[0].tagName // ""' 2>/dev/null || echo "")
+          LAST_BUILT="${LAST_TAG#v}"
+
+          echo "Latest upstream: ${LATEST}"
+          echo "Last built: ${LAST_BUILT}"
+
+          echo "kernel_version=${LATEST}" >> $GITHUB_OUTPUT
+
+          if [ "${LATEST}" != "${LAST_BUILT}" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    env:
+      KERNEL_VERSION: ${{ needs.check.outputs.kernel_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc-i686-linux-gnu bc libssl-dev libelf-dev flex bison \
+            dpkg-dev rsync libncurses-dev apt-utils
+
+      - name: Cache kernel tarball
+        uses: actions/cache@v4
+        with:
+          path: linux-${{ env.KERNEL_VERSION }}.tar.xz
+          key: kernel-tarball-${{ env.KERNEL_VERSION }}
+
+      - name: Download kernel source
+        run: |
+          if [ ! -f "linux-${KERNEL_VERSION}.tar.xz" ]; then
+            MAJOR=$(echo "${KERNEL_VERSION}" | cut -d. -f1)
+            curl -fO "https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${KERNEL_VERSION}.tar.xz"
+          fi
+          tar xf "linux-${KERNEL_VERSION}.tar.xz"
+
+      - name: Apply patches
+        run: |
+          KBRANCH=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
+          for patch in "patches/${KBRANCH}/"*.patch; do
+            echo "Applying ${patch}..."
+            patch -p1 -d "linux-${KERNEL_VERSION}" < "${patch}"
+          done
+
+      - name: Configure kernel
+        run: |
+          KBRANCH=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
+          cp "configs/${KBRANCH}op.config" "linux-${KERNEL_VERSION}/.config"
+          make -C "linux-${KERNEL_VERSION}" \
+            ARCH=i386 \
+            CROSS_COMPILE=i686-linux-gnu- \
+            LOCALVERSION=-openframe \
+            olddefconfig
+
+      - name: Build kernel packages
+        run: |
+          make -C "linux-${KERNEL_VERSION}" \
+            ARCH=i386 \
+            CROSS_COMPILE=i686-linux-gnu- \
+            LOCALVERSION=-openframe \
+            -j$(nproc) \
+            deb-pkg
+
+      - name: Collect packages
+        run: |
+          mkdir -p packages
+          mv *.deb packages/
+          ls -lh packages/
+
+      - name: Import GPG signing key
+        run: |
+          echo "${{ secrets.APT_SIGNING_KEY }}" | gpg --batch --import
+
+      - name: Checkout repo branch
+        uses: actions/checkout@v4
+        with:
+          ref: repo
+          path: apt-repo
+
+      - name: Update apt repository
+        run: |
+          POOL="apt-repo/pool/main"
+          BINARY="apt-repo/dists/trixie/main/binary-i386"
+          mkdir -p "${POOL}" "${BINARY}"
+
+          cp packages/*.deb "${POOL}/"
+
+          # Export public signing key for users
+          gpg --export --armor > apt-repo/KEY.gpg
+
+          cd apt-repo
+
+          # Generate Packages index
+          dpkg-scanpackages --arch i386 pool/main \
+            > dists/trixie/main/binary-i386/Packages
+          gzip -9c dists/trixie/main/binary-i386/Packages \
+            > dists/trixie/main/binary-i386/Packages.gz
+
+          # Generate Release file
+          apt-ftparchive \
+            -o APT::FTPArchive::Release::Origin="OpenFrame Kernel" \
+            -o APT::FTPArchive::Release::Label="OpenFrame Kernel" \
+            -o APT::FTPArchive::Release::Suite="trixie" \
+            -o APT::FTPArchive::Release::Codename="trixie" \
+            -o APT::FTPArchive::Release::Architectures="i386" \
+            -o APT::FTPArchive::Release::Components="main" \
+            -o APT::FTPArchive::Release::Description="OpenFrame Kernel Packages" \
+            release dists/trixie > dists/trixie/Release
+
+          # Sign Release file
+          GPG_KEY_ID=$(gpg --list-keys --with-colons | awk -F: '/^pub/{print $5; exit}')
+          gpg --batch --yes --default-key "${GPG_KEY_ID}" \
+            --clearsign -o dists/trixie/InRelease dists/trixie/Release
+          gpg --batch --yes --default-key "${GPG_KEY_ID}" \
+            --detach-sign --armor -o dists/trixie/Release.gpg dists/trixie/Release
+
+      - name: Push apt repository
+        run: |
+          cd apt-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Publish linux-${KERNEL_VERSION}-openframe"
+          git push
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${KERNEL_VERSION}"
+          NOTES="Kernel ${KERNEL_VERSION} with OpenFrame patches, built for Debian Trixie (i386)."
+
+          if gh release view "${TAG}" --repo ${{ github.repository }} &>/dev/null; then
+            gh release upload "${TAG}" \
+              --repo ${{ github.repository }} \
+              --clobber \
+              packages/*.deb
+          else
+            gh release create "${TAG}" \
+              --repo ${{ github.repository }} \
+              --title "Linux ${KERNEL_VERSION}-openframe" \
+              --notes "${NOTES}" \
+              packages/*.deb
+          fi
