@@ -132,6 +132,38 @@ jobs:
           gpg --batch --yes --default-key "${GPG_KEY_ID}" \
             --detach-sign --armor -o dists/trixie/Release.gpg dists/trixie/Release
 
+      - name: Prune old packages
+        run: |
+          cd apt-repo/pool/main
+
+          # Keep the 3 most recent versions of each package type, remove the rest
+          for pkg in linux-image linux-headers linux-libc-dev; do
+            ls -t ${pkg}*.deb 2>/dev/null | tail -n +4 | xargs -r rm -v
+          done
+
+      - name: Generate directory listing
+        run: |
+          cd apt-repo
+          {
+            printf '<!DOCTYPE html>\n<html>\n'
+            printf '<head><title>Index of /</title></head>\n'
+            printf '<body>\n<h1>Index of /</h1><hr><pre>\n'
+            for f in pool/main/*.deb; do
+              [ -f "$f" ] || continue
+              fname=$(basename "$f")
+              fsize=$(stat -c '%s' "$f")
+              fdate=$(date -d "@$(stat -c '%Y' "$f")" '+%d-%b-%Y %H:%M')
+              href="pool/main/${fname}"
+              namelen=${#fname}
+              padlen=$((51 - namelen))
+              [ ${padlen} -lt 1 ] && padlen=1
+              padding=$(printf '%*s' ${padlen} '')
+              printf '<a href="%s">%s</a>%s%s  %20s\n' \
+                "${href}" "${fname}" "${padding}" "${fdate}" "${fsize}"
+            done
+            printf '</pre><hr></body>\n</html>\n'
+          } > index.html
+
       - name: Push apt repository
         run: |
           cd apt-repo
