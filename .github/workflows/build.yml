@@ -122,7 +122,7 @@ jobs:
             CROSS_COMPILE=i686-linux-gnu- \
             LOCALVERSION=-openframe \
             -j$(nproc) \
-            deb-pkg
+            bindeb-pkg
 
       - name: Collect packages
         run: |
