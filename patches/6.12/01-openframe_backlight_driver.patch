@@ -93,7 +93,7 @@ diff -rupN linux-6.12.12-orig/drivers/video/backlight/openframe_bl.c linux-6.12.
 +	if (bd->props.power != FB_BLANK_UNBLANK)
 +		intensity = 0;
 +
-+	*bl_baseptr = (intensity << 1) | 0x400000;
++	*bl_baseptr = intensity ? (intensity << 1) | 0x400000 : 0;
 +
 +	return 0;
 +}
