@@ -22,6 +22,9 @@ jobs:
       should_build: ${{ steps.version.outputs.should_build }}
       kernel_version: ${{ steps.version.outputs.kernel_version }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Determine version to build
         id: version
         env:
@@ -34,8 +37,12 @@ jobs:
             exit 0
           fi
 
+          KBRANCH="6.1"
+
+          # Find latest upstream release for that branch (trailing dot prevents e.g. 6.1 matching 6.19)
           LATEST=$(curl -s https://www.kernel.org/releases.json | \
-            jq -r '[.releases[] | select(.version | startswith("6.1"))] | first | .version')
+            jq -r --arg branch "${KBRANCH}." \
+            '[.releases[] | select(.version | startswith($branch))] | first | .version')
 
           LAST_TAG=$(gh release list \
             --repo ${{ github.repository }} \
