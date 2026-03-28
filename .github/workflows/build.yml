@@ -1,4 +1,5 @@
-name: Build and Publish Kernel
+name: kernel-build-publish
+run-name: kernel build and publish ${{ inputs.kernel_version }}
 
 on:
   workflow_call:

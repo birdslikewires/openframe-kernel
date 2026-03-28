@@ -1,4 +1,5 @@
-name: Check for New Kernel
+name: kernel-check
+run-name: kernel check
 
 on:
   schedule:
