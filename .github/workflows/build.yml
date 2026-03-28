@@ -69,6 +69,7 @@ jobs:
     needs: check
     if: needs.check.outputs.should_build == 'true'
     runs-on: ubuntu-latest
+    container: debian:trixie
     env:
       KERNEL_VERSION: ${{ needs.check.outputs.kernel_version }}
       REPO_URL: https://kernel.openbeak.net
