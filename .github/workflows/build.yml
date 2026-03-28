@@ -82,7 +82,7 @@ jobs:
           apt-get update
           apt-get install -y \
             curl gcc-i686-linux-gnu bc libssl-dev libelf-dev flex bison \
-            dpkg-dev rsync libncurses-dev apt-utils
+            dpkg-dev rsync libncurses-dev apt-utils kmod cpio lsb-release
 
       - name: Cache kernel tarball
         uses: actions/cache@v4
