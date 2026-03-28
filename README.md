@@ -9,7 +9,7 @@ Kernels are built automatically for Debian Trixie (i386) and published to an apt
 To add the repository:
 
 ```bash
-curl -fsSL https://kernel.openbeak.net/KEY.gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/openframe-kernel.gpg
+curl -fsSL https://kernel.openbeak.net/key.gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/openframe-kernel.gpg
 echo "deb https://kernel.openbeak.net/ trixie main" | sudo tee /etc/apt/sources.list.d/openframe-kernel.list
 sudo apt update
 sudo apt install linux-image-*-openframe

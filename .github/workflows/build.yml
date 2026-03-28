@@ -104,7 +104,7 @@ jobs:
           cp packages/*.deb "${POOL}/"
 
           # Export public signing key for users
-          gpg --export --armor > apt-repo/KEY.gpg
+          gpg --export --armor > apt-repo/key.gpg
 
           cd apt-repo
 
