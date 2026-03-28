@@ -2,9 +2,18 @@
 
 These patches should be sufficient to get you compiling a new Linux kernel which works with your lovely **OpenFrame** device from OpenPeak.
 
-## Compiled Versions
+## Installing via apt
 
-Packages in .deb format should be [available from my build system](https://openbeak.net/openframe/kernel/). Newly released kernels are compiled in the early hours of a UK morning. Kernels from branch 5.10 are built with Debian Bullseye in mind, 6.1 is for Bookworm, and 6.12 is intended for Trixie.
+Kernels are built automatically for Debian Trixie (i386) and published to an apt repository at [kernel.openbeak.net](https://kernel.openbeak.net). New upstream 6.1.x releases are picked up nightly.
+
+To add the repository:
+
+```bash
+curl -fsSL https://kernel.openbeak.net/KEY.gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/openframe-kernel.gpg
+echo "deb https://kernel.openbeak.net/ trixie main" | sudo tee /etc/apt/sources.list.d/openframe-kernel.list
+sudo apt update
+sudo apt install linux-image-*-openframe
+```
 
 ## Patches
 
