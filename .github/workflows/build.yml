@@ -103,8 +103,8 @@ jobs:
 
           cp packages/*.deb "${POOL}/"
 
-          # Export public signing key for users
-          gpg --export --armor > apt-repo/key.gpg
+          # Export public signing key for users (binary dearmored for signed-by)
+          gpg --export > apt-repo/key.gpg
 
           cd apt-repo
 
