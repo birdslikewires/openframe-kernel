@@ -81,7 +81,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y \
-            curl gcc-i686-linux-gnu bc libssl-dev libelf-dev flex bison \
+            curl gnupg gcc-i686-linux-gnu bc libssl-dev libelf-dev flex bison \
             dpkg-dev rsync libncurses-dev apt-utils kmod cpio lsb-release
 
       - name: Cache kernel tarball
@@ -109,7 +109,7 @@ jobs:
       - name: Configure kernel
         run: |
           KBRANCH=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
-          cp "configs/${KBRANCH}op.config" "linux-${KERNEL_VERSION}/.config"
+          cp "configs/${KBRANCH}-openframe.config" "linux-${KERNEL_VERSION}/.config"
           make -C "linux-${KERNEL_VERSION}" \
             ARCH=i386 \
             CROSS_COMPILE=i686-linux-gnu- \
