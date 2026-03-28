@@ -148,7 +148,7 @@ jobs:
           TAG="v${KERNEL_VERSION}"
           NOTES="Kernel ${KERNEL_VERSION} with OpenFrame patches, built for Debian Trixie (i386)."
 
-          if gh release view "${TAG}" --repo ${{ github.repository }} &>/dev/null; then
+          if gh release view "${TAG}" --repo ${{ github.repository }} >/dev/null 2>&1; then
             gh release upload "${TAG}" \
               --repo ${{ github.repository }} \
               --clobber \
