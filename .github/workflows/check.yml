@@ -1,0 +1,61 @@
+name: Check for New Kernel
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.version.outputs.should_build }}
+      kernel_version: ${{ steps.version.outputs.kernel_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for new kernel version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          KBRANCH="6.1"
+
+          LATEST=$(curl -s https://www.kernel.org/releases.json | \
+            jq -r --arg branch "${KBRANCH}." \
+            '[.releases[] | select(.version | startswith($branch))] | first | .version')
+
+          LAST_TAG=$(gh release list \
+            --repo ${{ github.repository }} \
+            --limit 1 \
+            --json tagName \
+            -q '.[0].tagName // ""' 2>/dev/null || echo "")
+          LAST_BUILT="${LAST_TAG#v}"
+
+          echo "Latest upstream: ${LATEST}"
+          echo "Last built: ${LAST_BUILT}"
+
+          echo "kernel_version=${LATEST}" >> $GITHUB_OUTPUT
+
+          if [ "${LATEST}" != "${LAST_BUILT}" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      kernel_version: ${{ needs.check.outputs.kernel_version }}
+    secrets: inherit

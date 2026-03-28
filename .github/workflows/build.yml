@@ -1,14 +1,16 @@
 name: Build and Publish Kernel
 
 on:
-  schedule:
-    - cron: '0 3 * * *'
+  workflow_call:
+    inputs:
+      kernel_version:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       kernel_version:
-        description: 'Kernel version to build (e.g. 6.1.166). Leave blank to auto-detect latest.'
-        required: false
-        default: ''
+        description: 'Kernel version to build (e.g. 6.1.167)'
+        required: true
 
 permissions:
   contents: write
@@ -19,59 +21,11 @@ env:
 
 jobs:
 
-  check:
-    runs-on: ubuntu-latest
-    outputs:
-      should_build: ${{ steps.version.outputs.should_build }}
-      kernel_version: ${{ steps.version.outputs.kernel_version }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Determine version to build
-        id: version
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ -n "${{ inputs.kernel_version }}" ]; then
-            echo "Forced version: ${{ inputs.kernel_version }}"
-            echo "kernel_version=${{ inputs.kernel_version }}" >> $GITHUB_OUTPUT
-            echo "should_build=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          KBRANCH="6.1"
-
-          # Find latest upstream release for that branch (trailing dot prevents e.g. 6.1 matching 6.19)
-          LATEST=$(curl -s https://www.kernel.org/releases.json | \
-            jq -r --arg branch "${KBRANCH}." \
-            '[.releases[] | select(.version | startswith($branch))] | first | .version')
-
-          LAST_TAG=$(gh release list \
-            --repo ${{ github.repository }} \
-            --limit 1 \
-            --json tagName \
-            -q '.[0].tagName // ""' 2>/dev/null || echo "")
-          LAST_BUILT="${LAST_TAG#v}"
-
-          echo "Latest upstream: ${LATEST}"
-          echo "Last built: ${LAST_BUILT}"
-
-          echo "kernel_version=${LATEST}" >> $GITHUB_OUTPUT
-
-          if [ "${LATEST}" != "${LAST_BUILT}" ]; then
-            echo "should_build=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_build=false" >> $GITHUB_OUTPUT
-          fi
-
   build:
-    needs: check
-    if: needs.check.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     container: debian:trixie
     env:
-      KERNEL_VERSION: ${{ needs.check.outputs.kernel_version }}
+      KERNEL_VERSION: ${{ inputs.kernel_version }}
       REPO_URL: https://kernel.openbeak.net
     steps:
       - name: Checkout repository
@@ -81,14 +35,14 @@ jobs:
         run: |
           apt-get update
           apt-get install -y \
-            curl gnupg gcc-i686-linux-gnu bc libssl-dev libelf-dev flex bison \
+            curl git gnupg gcc-i686-linux-gnu bc libssl-dev libelf-dev flex bison \
             dpkg-dev rsync libncurses-dev apt-utils kmod cpio lsb-release
 
       - name: Cache kernel tarball
         uses: actions/cache@v4
         with:
-          path: linux-${{ env.KERNEL_VERSION }}.tar.xz
-          key: kernel-tarball-${{ env.KERNEL_VERSION }}
+          path: linux-${{ inputs.kernel_version }}.tar.xz
+          key: kernel-tarball-${{ inputs.kernel_version }}
 
       - name: Download kernel source
         run: |
