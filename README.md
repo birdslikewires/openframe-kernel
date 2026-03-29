@@ -1,10 +1,10 @@
 # Kernel Patches for OpenFrame
 
-These patches should be sufficient to get you compiling a new Linux kernel which works with your lovely **OpenFrame** device from OpenPeak.
+These patches should be sufficient to get you compiling a new Linux kernel which works with your lovely **OpenFrame** device from OpenPeak. In addition, this repository now builds the `.deb` packages used for system images.
 
 ## Installing via apt
 
-Kernels are now built automatically for Debian Trixie (i386) and published to an apt repository at [kernel.openbeak.net](https://kernel.openbeak.net). New upstream 6.1.x releases should be picked up within a few hours.
+Kernels are built automatically using Debian Trixie (i386) and published to an apt repository at [kernel.openbeak.net](https://kernel.openbeak.net). New upstream 6.1.x releases should be picked up within a few hours.
 
 To add the repository:
 
