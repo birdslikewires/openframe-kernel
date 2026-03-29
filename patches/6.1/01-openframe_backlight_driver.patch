@@ -34,6 +34,7 @@ diff -rupN linux-5.10.100-orig/drivers/video/backlight/openframe_bl.c linux-5.10
 + *  Backlight Driver for Openframe devices
 + *
 + *  Copyright (c) 2010 Andrew de Quincey
++ *  Copyright (c) 2024 Andrew Davison
 + *
 + *  Based onprogear_bl.c driver by Marcin Juszkiewicz
 + *  <linux at hrw dot one dot pl>
@@ -61,6 +62,10 @@ diff -rupN linux-5.10.100-orig/drivers/video/backlight/openframe_bl.c linux-5.10
 +
 +static struct pci_dev *gfx_dev = NULL;
 +static u32 *bl_baseptr = NULL;
++static u32 *pp_control = NULL;
++
++#define PP_CONTROL_OFFSET	0x61204
++#define POWER_TARGET_ON		(1 << 0)
 +
 +static int openframe_set_intensity(struct backlight_device *bd)
 +{
@@ -71,7 +76,13 @@ diff -rupN linux-5.10.100-orig/drivers/video/backlight/openframe_bl.c linux-5.10
 +	if (bd->props.fb_blank != FB_BLANK_UNBLANK)
 +		intensity = 0;
 +
-+	*bl_baseptr = intensity ? (intensity << 1) | 0x400000 : 0;
++	if (intensity == 0) {
++		*bl_baseptr = 0;
++		*pp_control &= ~POWER_TARGET_ON;
++	} else {
++		*pp_control |= POWER_TARGET_ON;
++		*bl_baseptr = (intensity << 1) | 0x400000;
++	}
 +
 +	return 0;
 +}
@@ -80,7 +91,7 @@ diff -rupN linux-5.10.100-orig/drivers/video/backlight/openframe_bl.c linux-5.10
 +{
 +	int intensity;
 +
-+	intensity = (*bl_baseptr >> 1) & 0x2f;
++	intensity = (*bl_baseptr >> 1) & 0x3f;
 +
 +	return intensity;
 +}
@@ -104,6 +115,16 @@ diff -rupN linux-5.10.100-orig/drivers/video/backlight/openframe_bl.c linux-5.10
 +
 +	pci_read_config_dword(gfx_dev, 16, &temp);
 +	bl_baseptr = ioremap(temp + 0x61254, 4);
++	if (!bl_baseptr) {
++		pci_dev_put(gfx_dev);
++		return -ENOMEM;
++	}
++	pp_control = ioremap(temp + PP_CONTROL_OFFSET, 4);
++	if (!pp_control) {
++		iounmap(bl_baseptr);
++		pci_dev_put(gfx_dev);
++		return -ENOMEM;
++	}
 +	memset(&props, 0, sizeof(struct backlight_properties));
 +	props.max_brightness = 32;
 +	props.power = FB_BLANK_UNBLANK;
@@ -113,6 +134,7 @@ diff -rupN linux-5.10.100-orig/drivers/video/backlight/openframe_bl.c linux-5.10
 +							     &pdev->dev, NULL,
 +							     &openframe_ops, &props);
 +	if (IS_ERR(openframe_backlight_device)) {
++		iounmap(pp_control);
 +		iounmap(bl_baseptr);
 +		pci_dev_put(gfx_dev);
 +		return PTR_ERR(openframe_backlight_device);
@@ -129,6 +151,7 @@ diff -rupN linux-5.10.100-orig/drivers/video/backlight/openframe_bl.c linux-5.10
 +	struct backlight_device *bd = platform_get_drvdata(pdev);
 +	backlight_device_unregister(bd);
 +
++	iounmap(pp_control);
 +	iounmap(bl_baseptr);
 +	pci_dev_put(gfx_dev);
 +
