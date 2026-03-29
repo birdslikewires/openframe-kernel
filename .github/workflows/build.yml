@@ -105,8 +105,9 @@ jobs:
 
       - name: Update apt repository
         run: |
-          POOL="apt-repo/pool/main"
-          BINARY="apt-repo/dists/trixie/main/binary-i386"
+          KCOMPONENT=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
+          POOL="apt-repo/pool/${KCOMPONENT}"
+          BINARY="apt-repo/dists/trixie/${KCOMPONENT}/binary-i386"
           mkdir -p "${POOL}" "${BINARY}"
 
           cp packages/*.deb "${POOL}/"
@@ -121,11 +122,14 @@ jobs:
 
           cd apt-repo
 
-          # Generate Packages index
-          dpkg-scanpackages --arch i386 pool/main \
-            > dists/trixie/main/binary-i386/Packages
-          gzip -9c dists/trixie/main/binary-i386/Packages \
-            > dists/trixie/main/binary-i386/Packages.gz
+          # Generate Packages index for this component
+          dpkg-scanpackages --arch i386 "pool/${KCOMPONENT}" \
+            > "dists/trixie/${KCOMPONENT}/binary-i386/Packages"
+          gzip -9c "dists/trixie/${KCOMPONENT}/binary-i386/Packages" \
+            > "dists/trixie/${KCOMPONENT}/binary-i386/Packages.gz"
+
+          # Discover all components and regenerate the Release file
+          COMPONENTS=$(ls -d dists/trixie/*/binary-i386 2>/dev/null | awk -F/ '{print $3}' | tr '\n' ' ' | sed 's/ $//')
 
           # Generate Release file
           apt-ftparchive \
@@ -134,7 +138,7 @@ jobs:
             -o APT::FTPArchive::Release::Suite="trixie" \
             -o APT::FTPArchive::Release::Codename="trixie" \
             -o APT::FTPArchive::Release::Architectures="i386" \
-            -o APT::FTPArchive::Release::Components="main" \
+            -o "APT::FTPArchive::Release::Components=${COMPONENTS}" \
             -o APT::FTPArchive::Release::Description="OpenFrame Kernel Packages" \
             release dists/trixie > dists/trixie/Release
 
@@ -166,13 +170,13 @@ jobs:
               fi
             }
 
-            for f in pool/main/*.deb; do
+            for f in pool/*/*.deb; do
               [ -f "$f" ] || continue
               fname=$(basename "$f")
               fsize=$(stat -c '%s' "$f")
               fdate=$(date -d "@$(stat -c '%Y' "$f")" '+%d-%b-%Y %H:%M')
               hsize=$(human_size "$fsize")
-              href="pool/main/${fname}"
+              href="${f}"
               namelen=${#fname}
               padlen=$((51 - namelen))
               [ ${padlen} -lt 1 ] && padlen=1
