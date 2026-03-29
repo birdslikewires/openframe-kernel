@@ -1,0 +1,57 @@
+Package: linux-headers-6.1.167-openframe
+Source: linux-upstream
+Version: 6.1.167-openframe-1
+Architecture: i386
+Maintainer: root <root@03d4a8ab365d>
+Installed-Size: 49308
+Filename: pool/6.1/linux-headers-6.1.167-openframe_6.1.167-openframe-1_i386.deb
+Size: 8341816
+MD5sum: 9c0eb43e77670793172200c50f993b7d
+SHA1: 9b1cbce998f4ebce8b606d0a93a46004852b926b
+SHA256: b0886d35a08008c861524d1ef08cd94a3aa5c6a5797740fe84483bbbc5521dea
+Section: kernel
+Priority: optional
+Homepage: https://www.kernel.org/
+Description: Linux kernel headers for 6.1.167-openframe on i386
+ This package provides kernel header files for 6.1.167-openframe on i386
+ .
+ This is useful for people who need to build external modules
+
+Package: linux-image-6.1.167-openframe
+Source: linux-upstream
+Version: 6.1.167-openframe-1
+Architecture: i386
+Maintainer: root <root@03d4a8ab365d>
+Installed-Size: 30148
+Filename: pool/6.1/linux-image-6.1.167-openframe_6.1.167-openframe-1_i386.deb
+Size: 11289240
+MD5sum: 08a60a79ae7a1231f0b02e175026933f
+SHA1: 37ce7e19f0a9098b6065d43448bc8da6d53758fa
+SHA256: 0d186d5d2d5d078037d05a69061a436c3d008af95f4d3307817c083ab3fb770b
+Section: kernel
+Priority: optional
+Homepage: https://www.kernel.org/
+Description: Linux kernel, version 6.1.167-openframe
+ This package contains the Linux kernel, modules and corresponding other
+ files, version: 6.1.167-openframe.
+
+Package: linux-libc-dev
+Source: linux-upstream
+Version: 6.1.167-openframe-1
+Architecture: i386
+Maintainer: root <root@03d4a8ab365d>
+Installed-Size: 6629
+Provides: linux-kernel-headers
+Filename: pool/6.1/linux-libc-dev_6.1.167-openframe-1_i386.deb
+Size: 1276320
+MD5sum: ca018b9c6cfd103a9476eaf29db920e1
+SHA1: bf1f63ebf1591b5145d3db7b5b05426cbd978cba
+SHA256: 1cd0cfce12a5c57c4908b23147255f48b57c8be1310aefe4f36c43636c77528a
+Section: devel
+Priority: optional
+Multi-Arch: same
+Homepage: https://www.kernel.org/
+Description: Linux support headers for userspace development
+ This package provides userspaces headers from the Linux kernel.  These headers
+ are used by the installed headers for GNU glibc and other system libraries.
+
