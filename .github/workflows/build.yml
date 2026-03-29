@@ -12,6 +12,7 @@ on:
       kernel_version:
         description: 'Kernel version to build (e.g. 6.1.167)'
         required: true
+        type: string
 
 permissions:
   contents: write
@@ -31,7 +32,6 @@ jobs:
     container: debian:trixie
     env:
       KERNEL_VERSION: ${{ inputs.kernel_version }}
-      REPO_URL: https://kernel.openbeak.net
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -53,9 +53,12 @@ jobs:
         run: |
           if [ ! -f "linux-${KERNEL_VERSION}.tar.xz" ]; then
             MAJOR=$(echo "${KERNEL_VERSION}" | cut -d. -f1)
-            curl -fO "https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${KERNEL_VERSION}.tar.xz"
+            curl -fO --retry 3 --retry-delay 5 \
+              "https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${KERNEL_VERSION}.tar.xz"
           fi
-          tar xf "linux-${KERNEL_VERSION}.tar.xz"
+          if [ ! -d "linux-${KERNEL_VERSION}" ]; then
+            tar xf "linux-${KERNEL_VERSION}.tar.xz"
+          fi
 
       - name: Apply patches
         run: |
@@ -108,6 +111,11 @@ jobs:
 
           cp packages/*.deb "${POOL}/"
 
+          # Keep the 3 most recent versions of each package type, remove the rest
+          for pkg in linux-image linux-headers linux-libc-dev; do
+            ls -t "${POOL}/${pkg}"*.deb 2>/dev/null | tail -n +4 | xargs -r rm -v
+          done
+
           # Export public signing key for users (binary dearmored for signed-by)
           gpg --export > apt-repo/key.gpg
 
@@ -136,15 +144,6 @@ jobs:
             --clearsign -o dists/trixie/InRelease dists/trixie/Release
           gpg --batch --yes --default-key "${GPG_KEY_ID}" \
             --detach-sign --armor -o dists/trixie/Release.gpg dists/trixie/Release
-
-      - name: Prune old packages
-        run: |
-          cd apt-repo/pool/main
-
-          # Keep the 3 most recent versions of each package type, remove the rest
-          for pkg in linux-image linux-headers linux-libc-dev; do
-            ls -t ${pkg}*.deb 2>/dev/null | tail -n +4 | xargs -r rm -v
-          done
 
       - name: Generate directory listing
         run: |
@@ -191,8 +190,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Publish linux-${KERNEL_VERSION}-openframe"
-          git push
+          git diff --cached --quiet && echo "No changes to commit" || \
+            git commit -m "Publish linux-${KERNEL_VERSION}-openframe"
+          git push origin repo
 
       - name: Create or update GitHub release
         env:

@@ -3,7 +3,7 @@ run-name: kernel check
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 */3 * * *'
   workflow_dispatch:
 
 permissions:
@@ -21,9 +21,6 @@ jobs:
       should_build: ${{ steps.version.outputs.should_build }}
       kernel_version: ${{ steps.version.outputs.kernel_version }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Check for new kernel version
         id: version
         env:
