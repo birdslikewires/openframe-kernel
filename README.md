@@ -1,6 +1,6 @@
 # Kernel Patches for OpenFrame
 
-These patches should be sufficient to get you compiling a new Linux kernel which works with your lovely **OpenFrame** device from OpenPeak. In addition, this repository now builds the `.deb` packages used for system images.
+These patches should be sufficient to get you compiling a new Linux kernel which works with your lovely **OpenFrame** device from OpenPeak. In addition, this repository now builds the `.deb` packages used for system images, available on the [https://github.com/birdslikewires/openframe-kernel/releases](Releases) page.
 
 ## Installing via apt
 
