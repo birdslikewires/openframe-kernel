@@ -38,10 +38,11 @@ jobs:
 
       - name: Install build dependencies
         run: |
+          dpkg --add-architecture i386
           apt-get update
           apt-get install -y \
-            curl git gnupg gh gcc-i686-linux-gnu bc libssl-dev libelf-dev flex bison \
-            dpkg-dev rsync libncurses-dev apt-utils kmod cpio lsb-release
+            curl git gnupg gh gcc-i686-linux-gnu bc libssl-dev libssl-dev:i386 libelf-dev flex bison \
+            debhelper dpkg-dev rsync libncurses-dev apt-utils kmod cpio lsb-release
 
       - name: Cache kernel tarball
         uses: actions/cache@v4
