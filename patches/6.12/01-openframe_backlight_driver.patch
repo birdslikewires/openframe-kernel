@@ -53,14 +53,14 @@ diff -rupN linux-6.12.12-orig/drivers/video/backlight/Makefile linux-6.12.12/dri
 diff -rupN linux-6.12.12-orig/drivers/video/backlight/openframe_bl.c linux-6.12.12/drivers/video/backlight/openframe_bl.c
 --- linux-6.12.12-orig/drivers/video/backlight/openframe_bl.c	1970-01-01 00:00:00.000000000 +0000
 +++ linux-6.12.12/drivers/video/backlight/openframe_bl.c	2025-02-07 15:28:07.414388352 +0000
-@@ -0,0 +1,139 @@
+@@ -0,0 +1,162 @@
 +/*
 + *  Backlight Driver for Openframe devices
 + *
 + *  Copyright (c) 2010 Andrew de Quincey
 + *  Copyright (c) 2024 Andrew Davison
 + *
-+ *  Based onprogear_bl.c driver by Marcin Juszkiewicz
++ *  Based on progear_bl.c driver by Marcin Juszkiewicz
 + *  <linux at hrw dot one dot pl>
 + *
 + *  Based on Progear LCD driver by M Schacht
