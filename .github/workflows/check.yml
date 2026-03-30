@@ -26,7 +26,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          KBRANCH="6.1"
+          KBRANCH="6.12"
 
           LATEST=$(curl -s https://www.kernel.org/releases.json | \
             jq -r --arg branch "${KBRANCH}." \
