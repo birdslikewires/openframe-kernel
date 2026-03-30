@@ -2,13 +2,13 @@ Package: linux-headers-6.12.79-openframe
 Source: linux-upstream
 Version: 6.12.79-1
 Architecture: i386
-Maintainer: root <root@a344fe8458d4>
+Maintainer: root <root@3bf106d08d55>
 Installed-Size: 50431
 Filename: pool/6.12/linux-headers-6.12.79-openframe_6.12.79-1_i386.deb
-Size: 8611452
-MD5sum: 4bbb96c06f9109e61219228db23b5f9e
-SHA1: 8b205dfd75c619b2553e30bbde6d44b747b1e8d4
-SHA256: 99a0881c8027dded2ce1a259441f778d72246518b5f845c96546257cbce096ba
+Size: 8611800
+MD5sum: 3c982bc4cd10ca311cb0ea53a27ffc20
+SHA1: d3f243972bd88cb6cb0fc374f9563cc043dd3039
+SHA256: 7160f49a9ab0a12e4dcfdb5e2d825643a8ecf122f511d2c3d73901f0963c6937
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -21,13 +21,13 @@ Package: linux-image-6.12.79-openframe
 Source: linux-upstream
 Version: 6.12.79-1
 Architecture: i386
-Maintainer: root <root@a344fe8458d4>
+Maintainer: root <root@3bf106d08d55>
 Installed-Size: 30705
 Filename: pool/6.12/linux-image-6.12.79-openframe_6.12.79-1_i386.deb
-Size: 11790432
-MD5sum: 6bcffdfcae854a955a1b5fa7f6f40b00
-SHA1: b96eb7341cbd2c7e08108862d7cdc9cb4f686913
-SHA256: 7ce59e2b5eaa937a5dac576773809d78a50ffd00a00d5f333b0589f4446c1b6d
+Size: 11786720
+MD5sum: 952aed1f5d707fdb471ed6982207cc85
+SHA1: c99f451b003f2adc7fba3f0005af69a20c4ab036
+SHA256: a5a8becfc3b66609fc1142ed8ce46b395c0cb077a46263c429f4e03bbc3fff5f
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -39,14 +39,14 @@ Package: linux-libc-dev
 Source: linux-upstream
 Version: 6.12.79-1
 Architecture: i386
-Maintainer: root <root@a344fe8458d4>
+Maintainer: root <root@3bf106d08d55>
 Installed-Size: 7191
 Provides: linux-kernel-headers
 Filename: pool/6.12/linux-libc-dev_6.12.79-1_i386.deb
-Size: 1396024
-MD5sum: 8ac4c2cc134a0ee85648409cbff91fa6
-SHA1: 573a90a1d6d4675a4e793eedde60c429caf6fb0c
-SHA256: 44442de4a44775e2be3e5e70191613be839a7c54d9c0d87803beb3175fb1b78a
+Size: 1395868
+MD5sum: ccffded8a10c1970377426277ecf49cf
+SHA1: 37badbd29beb584e3701c75153f4507859faf84d
+SHA256: a827fd6d68cf45bcc39d13d5a83a36638d76d6618c8108621cca738c59b0ac5b
 Section: devel
 Priority: optional
 Multi-Arch: same
