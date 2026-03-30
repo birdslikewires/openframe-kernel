@@ -2,13 +2,13 @@ Package: linux-headers-6.12.79-openframe
 Source: linux-upstream
 Version: 6.12.79-1
 Architecture: i386
-Maintainer: root <root@3bf106d08d55>
+Maintainer: root <root@86d155240202>
 Installed-Size: 50431
 Filename: pool/6.12/linux-headers-6.12.79-openframe_6.12.79-1_i386.deb
-Size: 8611800
-MD5sum: 3c982bc4cd10ca311cb0ea53a27ffc20
-SHA1: d3f243972bd88cb6cb0fc374f9563cc043dd3039
-SHA256: 7160f49a9ab0a12e4dcfdb5e2d825643a8ecf122f511d2c3d73901f0963c6937
+Size: 8611384
+MD5sum: 18c1a3b260f29c46501bf35552731802
+SHA1: 527c3f22f15901e472bb64945ca12f8914184ce1
+SHA256: 27b1d525915b4c006e562b8296a9cb4a4c2a41e2e3eab9ca1c43e38596bce1e5
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -21,13 +21,13 @@ Package: linux-image-6.12.79-openframe
 Source: linux-upstream
 Version: 6.12.79-1
 Architecture: i386
-Maintainer: root <root@3bf106d08d55>
-Installed-Size: 30705
+Maintainer: root <root@86d155240202>
+Installed-Size: 30760
 Filename: pool/6.12/linux-image-6.12.79-openframe_6.12.79-1_i386.deb
-Size: 11786720
-MD5sum: 952aed1f5d707fdb471ed6982207cc85
-SHA1: c99f451b003f2adc7fba3f0005af69a20c4ab036
-SHA256: a5a8becfc3b66609fc1142ed8ce46b395c0cb077a46263c429f4e03bbc3fff5f
+Size: 11804664
+MD5sum: a47fe2d906b522571ce6c33a862a9ab3
+SHA1: a311c6e5ee2eddea9df33ebf61bdf8bca0902922
+SHA256: 99326bfee91eed1b9de132612ea123ed554e2fa7c8c2c36c8ba2ddcf6f48ea3a
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -39,14 +39,14 @@ Package: linux-libc-dev
 Source: linux-upstream
 Version: 6.12.79-1
 Architecture: i386
-Maintainer: root <root@3bf106d08d55>
+Maintainer: root <root@86d155240202>
 Installed-Size: 7191
 Provides: linux-kernel-headers
 Filename: pool/6.12/linux-libc-dev_6.12.79-1_i386.deb
-Size: 1395868
-MD5sum: ccffded8a10c1970377426277ecf49cf
-SHA1: 37badbd29beb584e3701c75153f4507859faf84d
-SHA256: a827fd6d68cf45bcc39d13d5a83a36638d76d6618c8108621cca738c59b0ac5b
+Size: 1395916
+MD5sum: 327a01e0daabcb6ec3600c22e1f036ca
+SHA1: 90c199869d68312fd482c46ca7b304feb93a2d63
+SHA256: 9caff2ed5482bd8eaba3c8782ac02d5b0712ce5db25a0768fde9bd233ab7cefc
 Section: devel
 Priority: optional
 Multi-Arch: same
