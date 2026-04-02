@@ -218,3 +218,12 @@ jobs:
               --notes "${NOTES}" \
               packages/*.deb
           fi
+
+      - name: Dispatch image build in openframe-linux
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
+        run: |
+          gh api repos/birdslikewires/openframe-linux/dispatches \
+            --method POST \
+            --field event_type=kernel-released \
+            --field client_payload[kernel_version]="${KERNEL_VERSION}"
