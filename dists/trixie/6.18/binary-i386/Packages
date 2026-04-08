@@ -1,0 +1,57 @@
+Package: linux-headers-6.18.21-openframe
+Source: linux-upstream
+Version: 6.18.21-1
+Architecture: i386
+Maintainer: root <root@484679038a76>
+Installed-Size: 53691
+Filename: pool/6.18/linux-headers-6.18.21-openframe_6.18.21-1_i386.deb
+Size: 9130776
+MD5sum: 628141b908ae4817095958f43df2ccc6
+SHA1: e75c382c0e5429dc5a2101f43a4b9904104c6538
+SHA256: c9b634f1700e4eb302d57e2ecc3863ccf55bb81ffbd262e9d0e5e49f23a739b9
+Section: kernel
+Priority: optional
+Homepage: https://www.kernel.org/
+Description: Linux kernel headers for 6.18.21-openframe on i386
+ This package provides kernel header files for 6.18.21-openframe on i386
+ .
+ This is useful for people who need to build external modules
+
+Package: linux-image-6.18.21-openframe
+Source: linux-upstream
+Version: 6.18.21-1
+Architecture: i386
+Maintainer: root <root@484679038a76>
+Installed-Size: 30520
+Filename: pool/6.18/linux-image-6.18.21-openframe_6.18.21-1_i386.deb
+Size: 11898472
+MD5sum: 84fca7c77420b0f2ccfef1a29fa38faf
+SHA1: 070b40a3a51462c8140f416c890583c3abb93d54
+SHA256: 03cf936bfe172e4f011a18fe68f887f07cf5a6c06548e8a7dbc3b4f279e00765
+Section: kernel
+Priority: optional
+Homepage: https://www.kernel.org/
+Description: Linux kernel, version 6.18.21-openframe
+ This package contains the Linux kernel, modules and corresponding other
+ files, version: 6.18.21-openframe.
+
+Package: linux-libc-dev
+Source: linux-upstream
+Version: 6.18.21-1
+Architecture: i386
+Maintainer: root <root@484679038a76>
+Installed-Size: 7555
+Provides: linux-kernel-headers
+Filename: pool/6.18/linux-libc-dev_6.18.21-1_i386.deb
+Size: 1465076
+MD5sum: 7ad29075c24a0b710b64c998b6331a0a
+SHA1: 6edb2533f3b4bf913e55b462abd2e572f9c8314c
+SHA256: fbea332a2ebcb0bbd9495bfd8f4388b60b5359ac13f51d0e505f315419b4cf03
+Section: devel
+Priority: optional
+Multi-Arch: same
+Homepage: https://www.kernel.org/
+Description: Linux support headers for userspace development
+ This package provides userspaces headers from the Linux kernel.  These headers
+ are used by the installed headers for GNU glibc and other system libraries.
+
