@@ -1,0 +1,213 @@
+--- a/drivers/gpu/drm/gma500/backlight.c
++++ b/drivers/gpu/drm/gma500/backlight.c
+@@ -17,6 +17,8 @@
+ #include "intel_bios.h"
+ #include "power.h"
+
++#undef CONFIG_BACKLIGHT_CLASS_DEVICE  // OpenFrame Workaround
++
+ void gma_backlight_enable(struct drm_device *dev)
+ {
+ 	struct drm_psb_private *dev_priv = to_drm_psb_private(dev);
+--- a/drivers/gpu/drm/gma500/psb_device.c
++++ b/drivers/gpu/drm/gma500/psb_device.c
+@@ -48,6 +48,8 @@ static int psb_backlight_setup(struct dr
+ 	uint32_t value;
+ 	uint32_t blc_pwm_precision_factor;
+
++	return 0;  // OpenFrame Workaround
++
+ 	/* get bl_max_freq and pol from dev_priv*/
+ 	if (!dev_priv->lvds_bl) {
+ 		dev_err(dev->dev, "Has no valid LVDS backlight info\n");
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -420,6 +420,13 @@ config BACKLIGHT_MP3309C
+ 	  To compile this driver as a module, choose M here: the module will
+ 	  be called mp3309c.
+
++config BACKLIGHT_OPENFRAME
++	tristate "Openframe Backlight Driver"
++	depends on BACKLIGHT_CLASS_DEVICE && PCI && X86
++	help
++	  If you have an OpenFrame device say Y to enable the
++	  backlight driver.
++
+ config BACKLIGHT_PANDORA
+ 	tristate "Backlight driver for Pandora console"
+ 	depends on TWL4030_CORE
+--- a/drivers/video/backlight/Makefile
++++ b/drivers/video/backlight/Makefile
+@@ -48,6 +48,7 @@ obj-$(CONFIG_BACKLIGHT_MAX8925)		+= max8
+ obj-$(CONFIG_BACKLIGHT_MP3309C)		+= mp3309c.o
+ obj-$(CONFIG_BACKLIGHT_MT6370)		+= mt6370-backlight.o
+ obj-$(CONFIG_BACKLIGHT_OMAP1)		+= omap1_bl.o
++obj-$(CONFIG_BACKLIGHT_OPENFRAME)	+= openframe_bl.o
+ obj-$(CONFIG_BACKLIGHT_PANDORA)		+= pandora_bl.o
+ obj-$(CONFIG_BACKLIGHT_PCF50633)	+= pcf50633-backlight.o
+ obj-$(CONFIG_BACKLIGHT_PWM)		+= pwm_bl.o
+--- /dev/null
++++ b/drivers/video/backlight/openframe_bl.c
+@@ -0,0 +1,162 @@
++/*
++ *  Backlight Driver for Openframe devices
++ *
++ *  Copyright (c) 2010 Andrew de Quincey
++ *  Copyright (c) 2024 Andrew Davison
++ *
++ *  Based on progear_bl.c driver by Marcin Juszkiewicz
++ *  <linux at hrw dot one dot pl>
++ *
++ *  Based on Progear LCD driver by M Schacht
++ *  <mschacht at alumni dot washington dot edu>
++ *
++ *  Based on Sharp's Corgi Backlight Driver
++ *  Based on Backlight Driver for HP Jornada 680
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/mutex.h>
++#include <linux/fb.h>
++#include <linux/backlight.h>
++#include <linux/pci.h>
++
++static struct pci_dev *gfx_dev = NULL;
++static u32 *bl_baseptr = NULL;
++static u32 *pp_control = NULL;
++
++#define PP_CONTROL_OFFSET	0x61204
++#define POWER_TARGET_ON		(1 << 0)
++
++static int openframe_set_intensity(struct backlight_device *bd)
++{
++	int intensity = bd->props.brightness;
++
++	if (bd->props.power != FB_BLANK_UNBLANK)
++		intensity = 0;
++
++	if (intensity == 0) {
++		*bl_baseptr = 0;
++		*pp_control &= ~POWER_TARGET_ON;
++	} else {
++		*pp_control |= POWER_TARGET_ON;
++		*bl_baseptr = (intensity << 1) | 0x400000;
++	}
++
++	return 0;
++}
++
++static int openframe_get_intensity(struct backlight_device *bd)
++{
++	int intensity;
++
++	intensity = (*bl_baseptr >> 1) & 0x3f;
++
++	return intensity;
++}
++
++static struct backlight_ops openframe_ops = {
++	.get_brightness = openframe_get_intensity,
++	.update_status = openframe_set_intensity,
++};
++
++static int openframe_probe(struct platform_device *pdev)
++{
++	u32 temp;
++	struct backlight_device *openframe_backlight_device;
++	struct backlight_properties props;
++
++	gfx_dev = pci_get_device(PCI_VENDOR_ID_INTEL, 0x8108, NULL);
++	if (!gfx_dev) {
++		printk("Intel SCH Poulsbo graphics controller not found.\n");
++		return -ENODEV;
++	}
++
++	pci_read_config_dword(gfx_dev, 16, &temp);
++	bl_baseptr = ioremap(temp + 0x61254, 4);
++	if (!bl_baseptr) {
++		pci_dev_put(gfx_dev);
++		return -ENOMEM;
++	}
++	pp_control = ioremap(temp + PP_CONTROL_OFFSET, 4);
++	if (!pp_control) {
++		iounmap(bl_baseptr);
++		pci_dev_put(gfx_dev);
++		return -ENOMEM;
++	}
++	memset(&props, 0, sizeof(struct backlight_properties));
++	props.max_brightness = 32;
++	props.power = FB_BLANK_UNBLANK;
++	props.type = BACKLIGHT_PLATFORM;
++	props.brightness = 32;
++	openframe_backlight_device = backlight_device_register("openframe-bl",
++							     &pdev->dev, NULL,
++							     &openframe_ops, &props);
++	if (IS_ERR(openframe_backlight_device)) {
++		iounmap(pp_control);
++		iounmap(bl_baseptr);
++		pci_dev_put(gfx_dev);
++		return PTR_ERR(openframe_backlight_device);
++	}
++	platform_set_drvdata(pdev, openframe_backlight_device);
++
++	openframe_set_intensity(openframe_backlight_device);
++
++	return 0;
++}
++
++static void openframe_remove(struct platform_device *pdev)
++{
++	struct backlight_device *bd = platform_get_drvdata(pdev);
++	backlight_device_unregister(bd);
++
++	iounmap(pp_control);
++	iounmap(bl_baseptr);
++	pci_dev_put(gfx_dev);
++}
++
++static struct platform_driver openframe_driver = {
++	.probe = openframe_probe,
++	.remove = openframe_remove,
++	.driver = {
++		   .name = "openframe-bl",
++		   },
++};
++
++static struct platform_device *openframe_device;
++
++static int __init openframe_init(void)
++{
++	int ret = platform_driver_register(&openframe_driver);
++
++	if (ret)
++		return ret;
++	openframe_device = platform_device_register_simple("openframe-bl", -1,
++								NULL, 0);
++	if (IS_ERR(openframe_device)) {
++		platform_driver_unregister(&openframe_driver);
++		return PTR_ERR(openframe_device);
++	}
++
++	return 0;
++}
++
++static void __exit openframe_exit(void)
++{
++	platform_device_unregister(openframe_device);
++	platform_driver_unregister(&openframe_driver);
++}
++
++module_init(openframe_init);
++module_exit(openframe_exit);
++
++MODULE_AUTHOR("Andrew de Quincey <adq@lidskialf.net>");
++MODULE_DESCRIPTION("Openframe Backlight Driver");
++MODULE_LICENSE("GPL");

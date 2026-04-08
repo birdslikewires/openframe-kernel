@@ -4,7 +4,7 @@ These patches should be sufficient to get you compiling a new Linux kernel which
 
 ## Installing via apt
 
-Kernels are built automatically using Debian Trixie (i386) and published to an apt repository at [kernel.openbeak.net](https://kernel.openbeak.net). New upstream 6.12.x releases should be picked up within a few hours.
+Kernels are built automatically using Debian Trixie (i386) and published to an apt repository at [kernel.openbeak.net](https://kernel.openbeak.net). New upstream 6.18.x releases should be picked up within a few hours.
 
 To add the repository:
 

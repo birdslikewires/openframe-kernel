@@ -1,0 +1,21 @@
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -916,6 +916,7 @@ static void path_power_down_sync(struct
+ /* turn on/off EAPD on the given pin */
+ static void set_pin_eapd(struct hda_codec *codec, hda_nid_t pin, bool enable)
+ {
++	pin = 0x07;  // OpenFrame Workaround
+ 	struct hda_gen_spec *spec = codec->spec;
+ 	if (spec->own_eapd_ctl ||
+ 	    !(snd_hda_query_pin_caps(codec, pin) & AC_PINCAP_EAPD))
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -4520,7 +4520,7 @@ static int patch_stac925x(struct hda_cod
+
+ 	spec = codec->spec;
+ 	spec->linear_tone_beep = 1;
+-	spec->gen.own_eapd_ctl = 1;
++	//spec->gen.own_eapd_ctl = 1;  // OpenFrame Workaround
+
+ 	snd_hda_add_verbs(codec, stac925x_core_init);
+

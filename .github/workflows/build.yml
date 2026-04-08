@@ -66,7 +66,7 @@ jobs:
           KBRANCH=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
           for patch in "patches/${KBRANCH}/"*.patch; do
             echo "Applying ${patch}..."
-            patch -p1 -d "linux-${KERNEL_VERSION}" < "${patch}"
+            patch --fuzz=3 -p1 -d "linux-${KERNEL_VERSION}" < "${patch}"
           done
 
       - name: Configure kernel

@@ -1,0 +1,20 @@
+--- a/drivers/i2c/busses/i2c-isch.c
++++ b/drivers/i2c/busses/i2c-isch.c
+@@ -44,6 +44,8 @@
+ #define SCH_WORD_DATA		0x03
+ #define SCH_BLOCK_DATA		0x05
+
++#define SMBIOSIZE	8  // OpenFrame Workaround
++
+ static unsigned short sch_smba;
+ static struct i2c_adapter sch_adapter;
+ static int backbone_speed = 33000; /* backbone speed in kHz */
+@@ -261,7 +263,7 @@ static int smbus_sch_probe(struct platfo
+ 	if (!res)
+ 		return -EBUSY;
+
+-	if (!devm_request_region(&dev->dev, res->start, resource_size(res),
++	if (!devm_request_region(&dev->dev, res->start, SMBIOSIZE,
+ 				 dev->name)) {
+ 		dev_err(&dev->dev, "SMBus region 0x%x already in use!\n",
+ 			sch_smba);
