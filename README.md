@@ -10,9 +10,17 @@ To add the repository:
 
 ```bash
 sudo curl -fsSL https://kernel.openbeak.net/key.gpg -o /etc/apt/keyrings/openframe-kernel.gpg
-echo "deb [signed-by=/etc/apt/keyrings/openframe-kernel.gpg] https://kernel.openbeak.net/ trixie main" | sudo tee /etc/apt/sources.list.d/openframe-kernel.list
+echo "deb [signed-by=/etc/apt/keyrings/openframe-kernel.gpg] https://kernel.openbeak.net/ trixie 6.18" | sudo tee /etc/apt/sources.list.d/openframe-kernel.list
 sudo apt update
-sudo apt install linux-image-*-openframe
+sudo apt install linux-image-openframe-6.18
+```
+
+This installs a metapackage that tracks the latest 6.18.x kernel. Future point releases will then appear via `apt upgrade`:
+
+```bash
+sudo apt update
+sudo apt upgrade
+sudo apt autoremove
 ```
 
 Adding the repository to earlier Trixie images is completely possible, just make sure to put [this file](https://raw.githubusercontent.com/birdslikewires/openframe-linux/refs/heads/main/overlay-debian-trixie/etc/kernel/postinst.d/openframe-grub-update) in your `/etc/kernel/postinst.d` directory otherwise your `grub.cfg` file won't be updated to use it.
