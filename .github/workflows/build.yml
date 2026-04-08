@@ -42,7 +42,7 @@ jobs:
           apt-get update
           apt-get install -y \
             curl git gnupg gh gcc-i686-linux-gnu bc libssl-dev libssl-dev:i386 libelf-dev flex bison \
-            debhelper dpkg-dev rsync libncurses-dev apt-utils kmod cpio lsb-release
+            debhelper dpkg-dev rsync libncurses-dev apt-utils kmod cpio lsb-release libdw-dev python3
 
       - name: Cache kernel tarball
         uses: actions/cache@v4
