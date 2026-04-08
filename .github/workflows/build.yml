@@ -100,16 +100,9 @@ jobs:
           METAPKG="linux-image-openframe-${KBRANCH}"
           METADIR="metapkg/${METAPKG}"
           mkdir -p "${METADIR}/DEBIAN"
-          cat > "${METADIR}/DEBIAN/control" << EOF
-Package: ${METAPKG}
-Version: ${KERNEL_VERSION}
-Architecture: i386
-Maintainer: OpenFrame Project <noreply@openbeak.net>
-Description: OpenFrame kernel metapackage (${KBRANCH} series)
- Tracks the latest OpenFrame Linux ${KBRANCH} kernel.
- Install this package to receive kernel updates via apt upgrade.
-Depends: linux-image-${KERNEL_VERSION}-openframe
-EOF
+          printf 'Package: %s\nVersion: %s\nArchitecture: i386\nMaintainer: OpenFrame Project <noreply@openbeak.net>\nDescription: OpenFrame kernel metapackage (%s series)\n Tracks the latest OpenFrame Linux %s kernel.\n Install this package to receive kernel updates via apt upgrade.\nDepends: linux-image-%s-openframe\n' \
+            "${METAPKG}" "${KERNEL_VERSION}" "${KBRANCH}" "${KBRANCH}" "${KERNEL_VERSION}" \
+            > "${METADIR}/DEBIAN/control"
           dpkg-deb --build --root-owner-group "${METADIR}" \
             "packages/${METAPKG}_${KERNEL_VERSION}_i386.deb"
 
