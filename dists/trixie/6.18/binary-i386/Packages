@@ -36,68 +36,69 @@ Description: Linux kernel headers for 6.18.26-openframe on i386
  .
  This is useful for people who need to build external modules
 
-Package: linux-image-6.18.25-openframe
+Package: linux-headers-6.18.27-openframe
 Source: linux-upstream
-Version: 6.18.25-2
+Version: 6.18.27-1
 Architecture: i386
-Maintainer: root <root@29ca085441f7>
-Installed-Size: 29964
-Filename: pool/6.18/linux-image-6.18.25-openframe_6.18.25-2_i386.deb
-Size: 11820968
-MD5sum: 499b3a8c47ad0554f12803b47f9b1426
-SHA1: 2854d95427cb965d7bca4517311479cecd479f37
-SHA256: 5e0491d81b1d9d031f7aa5d59845a0dcc7c91a03f27bc51e9d5e66fb55b2da31
+Maintainer: root <root@88bf5a9c1881>
+Installed-Size: 53688
+Filename: pool/6.18/linux-headers-6.18.27-openframe_6.18.27-1_i386.deb
+Size: 9130208
+MD5sum: b2c057e8b6e9a577b7a9a73b1827e736
+SHA1: 0bc77b6e7d8278267ce59de3e2e5ce27541cd3ad
+SHA256: 965b8eb41084ead61756f4ccff88b467786a7a615e1403ebf2a0adbdab80de3c
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
-Description: Linux kernel, version 6.18.25-openframe
- This package contains the Linux kernel, modules and corresponding other
- files, version: 6.18.25-openframe.
+Description: Linux kernel headers for 6.18.27-openframe on i386
+ This package provides kernel header files for 6.18.27-openframe on i386
+ .
+ This is useful for people who need to build external modules
 
-Package: linux-image-6.18.26-openframe
+Package: linux-image-6.18.27-openframe
 Source: linux-upstream
-Version: 6.18.26-1
+Version: 6.18.27-1
 Architecture: i386
-Maintainer: root <root@48940f0ff57a>
-Installed-Size: 29964
-Filename: pool/6.18/linux-image-6.18.26-openframe_6.18.26-1_i386.deb
-Size: 11821852
-MD5sum: 0228c78bed30b0bd6a01943cf7d454dc
-SHA1: 340bcf1b5a05606607f4503e4ad085c50742ed62
-SHA256: ae18d0cfe63e0c4f4c65b0de76660c68644c5fd03d524b235c7b226d39ce7377
+Maintainer: root <root@88bf5a9c1881>
+Installed-Size: 29965
+Filename: pool/6.18/linux-image-6.18.27-openframe_6.18.27-1_i386.deb
+Size: 11824880
+MD5sum: c40f49bd5f93cfa2b32465f37ec12712
+SHA1: 4d6efb0cd58f9b974396926abefa3d52fb62a58e
+SHA256: 43012be8243d22bb6918b2d94052b9087cc4a31159663f1b457f5e0428b69772
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
-Description: Linux kernel, version 6.18.26-openframe
+Description: Linux kernel, version 6.18.27-openframe
  This package contains the Linux kernel, modules and corresponding other
- files, version: 6.18.26-openframe.
+ files, version: 6.18.27-openframe.
 
 Package: linux-image-openframe-6.18
-Version: 6.18.26
+Version: 6.18.27
 Architecture: i386
 Maintainer: OpenFrame Project <noreply@openbeak.net>
-Depends: linux-image-6.18.26-openframe
-Filename: pool/6.18/linux-image-openframe-6.18_6.18.26_i386.deb
+Depends: linux-image-6.18.27-openframe
+Filename: pool/6.18/linux-image-openframe-6.18_6.18.27_i386.deb
 Size: 980
-MD5sum: 78b97a2d009a2dd3be7d5b95fcc6ad12
-SHA1: 649bd4fb28551bd6062640d270738a8f25501dc7
-SHA256: 1a83e610c4c8f3d64f12b85a8a40b4b2a1c0f7e57e38b7c5e07e69fecc514e5f
+MD5sum: b7f1a59b77a56ae4bca7c0e494edc7a3
+SHA1: da30442296e725abcc8ea7a5de6caa76a21df94a
+SHA256: 2d845b7cc63ddae28bd977d669f7bf35d1568aa4b536fa7c268d65e00e65d6a3
 Description: OpenFrame kernel metapackage (6.18 series)
  Tracks the latest OpenFrame Linux 6.18 kernel.
  Install this package to receive kernel updates via apt upgrade.
 
 Package: linux-libc-dev
 Source: linux-upstream
-Version: 6.18.26-1
+Version: 6.18.27-1
 Architecture: i386
-Maintainer: root <root@48940f0ff57a>
+Maintainer: root <root@88bf5a9c1881>
 Installed-Size: 7555
 Provides: linux-kernel-headers
-Filename: pool/6.18/linux-libc-dev_6.18.26-1_i386.deb
-Size: 1465100
-MD5sum: f622f8d734c1fcc47671d220c912cd30
-SHA1: 033b6ed5a4fd8dfa889f480a385a9d80a1c8de7a
-SHA256: d774ba1a27fbbeac929310ae9c19fa27ed7ebc0ca71ad196782ff9aee329be37
+Filename: pool/6.18/linux-libc-dev_6.18.27-1_i386.deb
+Size: 1465108
+MD5sum: ce4b01a94b2d80cc02e654733f8ac9ad
+SHA1: fdb14e9c16401e9059049147ced96b8b0720431b
+SHA256: 209eb2762ff4541acbfc571ad2f4bd2973972aae2efa70e5a956a8457a03e829
 Section: devel
 Priority: optional
 Multi-Arch: same
