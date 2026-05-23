@@ -57,3 +57,32 @@ jobs:
     with:
       kernel_version: ${{ needs.check.outputs.kernel_version }}
     secrets: inherit
+
+  dispatch:
+    needs: check
+    if: needs.check.outputs.should_build == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if image exists in openframe-linux
+        id: image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${{ needs.check.outputs.kernel_version }}"
+          if gh release view "${TAG}" --repo birdslikewires/openframe-linux > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Image already exists for ${TAG}, skipping dispatch."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "No image found for ${TAG}, dispatching to openframe-linux."
+          fi
+
+      - name: Dispatch image build
+        if: steps.image.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
+        run: |
+          gh api repos/birdslikewires/openframe-linux/dispatches \
+            --method POST \
+            --field event_type=kernel-released \
+            --field client_payload[kernel_version]="${{ needs.check.outputs.kernel_version }}"
