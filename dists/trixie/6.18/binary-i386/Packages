@@ -1,22 +1,3 @@
-Package: linux-headers-6.18.30-openframe
-Source: linux-upstream
-Version: 6.18.30-1
-Architecture: i386
-Maintainer: root <root@3ba1ddb4409d>
-Installed-Size: 53689
-Filename: pool/6.18/linux-headers-6.18.30-openframe_6.18.30-1_i386.deb
-Size: 9130724
-MD5sum: cd9a70d061b4d40c3974bc8eedc40b07
-SHA1: 1cadea335a770eefa9c0943c15f2835df697a7ba
-SHA256: 6a179bf997d140f1cdbc87a07ae706dab76d2b1d0110cb1f446cf938f8fcd395
-Section: kernel
-Priority: optional
-Homepage: https://www.kernel.org/
-Description: Linux kernel headers for 6.18.30-openframe on i386
- This package provides kernel header files for 6.18.30-openframe on i386
- .
- This is useful for people who need to build external modules
-
 Package: linux-headers-6.18.31-openframe
 Source: linux-upstream
 Version: 6.18.31-1
@@ -55,50 +36,69 @@ Description: Linux kernel headers for 6.18.32-openframe on i386
  .
  This is useful for people who need to build external modules
 
-Package: linux-image-6.18.32-openframe
+Package: linux-headers-6.18.33-openframe
 Source: linux-upstream
-Version: 6.18.32-1
+Version: 6.18.33-1
 Architecture: i386
-Maintainer: root <root@aa13f757aedc>
-Installed-Size: 29968
-Filename: pool/6.18/linux-image-6.18.32-openframe_6.18.32-1_i386.deb
-Size: 11821440
-MD5sum: e8b6ba0380a63a78fdc4410a408fd003
-SHA1: d9cd8c1de3eab28debbe61c3edc9223b9b671468
-SHA256: 5d0b25bd61dbc04a229926115394f796c96ce119d7be066dcbd4a34faf699595
+Maintainer: root <root@476fa9de3b45>
+Installed-Size: 53705
+Filename: pool/6.18/linux-headers-6.18.33-openframe_6.18.33-1_i386.deb
+Size: 9133388
+MD5sum: 6735991d2e4e0f0dc01b9deff3f8e8a7
+SHA1: 74bacd03c0a0c93d1e9f5eedbe247d2446d702b8
+SHA256: 6659522cad14d68bdad31d8d480043ee5241f394642df4cf2afde2fd2deb7bda
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
-Description: Linux kernel, version 6.18.32-openframe
+Description: Linux kernel headers for 6.18.33-openframe on i386
+ This package provides kernel header files for 6.18.33-openframe on i386
+ .
+ This is useful for people who need to build external modules
+
+Package: linux-image-6.18.33-openframe
+Source: linux-upstream
+Version: 6.18.33-1
+Architecture: i386
+Maintainer: root <root@476fa9de3b45>
+Installed-Size: 29977
+Filename: pool/6.18/linux-image-6.18.33-openframe_6.18.33-1_i386.deb
+Size: 11828612
+MD5sum: 974f890bfb8dda8c0c9adb68c9e42a3c
+SHA1: 112c73e79f00db3e68d984b2977eac0e1d36d207
+SHA256: 12b9cb46df734fc5749312360253006464d55b1688025a1a5ffdb6a45397ace6
+Section: kernel
+Priority: optional
+Homepage: https://www.kernel.org/
+Description: Linux kernel, version 6.18.33-openframe
  This package contains the Linux kernel, modules and corresponding other
- files, version: 6.18.32-openframe.
+ files, version: 6.18.33-openframe.
 
 Package: linux-image-openframe-6.18
-Version: 6.18.32
+Version: 6.18.33
 Architecture: i386
 Maintainer: OpenFrame Project <noreply@openbeak.net>
-Depends: linux-image-6.18.32-openframe
-Filename: pool/6.18/linux-image-openframe-6.18_6.18.32_i386.deb
+Depends: linux-image-6.18.33-openframe
+Filename: pool/6.18/linux-image-openframe-6.18_6.18.33_i386.deb
 Size: 980
-MD5sum: f4d13feba25e6b0d9932b1f2f3858444
-SHA1: 3033000b24d07d8e828598e6c23eea8f7495c60f
-SHA256: fdaa73a08411d8367ae76ed5eef9f7ac5cd4c2d457f7a80018abacd465d8bd08
+MD5sum: 94e8bbf879ce4546f4ca19e643b356fa
+SHA1: 186321ca615b05859574f78331723a79b1beef32
+SHA256: 56fc1f49a135e0989531b23c6dffb7c0dfcc29a7988827e97ac837a0d3c8e27c
 Description: OpenFrame kernel metapackage (6.18 series)
  Tracks the latest OpenFrame Linux 6.18 kernel.
  Install this package to receive kernel updates via apt upgrade.
 
 Package: linux-libc-dev
 Source: linux-upstream
-Version: 6.18.32-1
+Version: 6.18.33-1
 Architecture: i386
-Maintainer: root <root@aa13f757aedc>
+Maintainer: root <root@476fa9de3b45>
 Installed-Size: 7555
 Provides: linux-kernel-headers
-Filename: pool/6.18/linux-libc-dev_6.18.32-1_i386.deb
-Size: 1465152
-MD5sum: fda8cc5144608ae31336c1299e8b4792
-SHA1: b102098172a4df27a9a5fdd42ec7ba809dbe6bab
-SHA256: 3d4c5b2a90479427ee5ccb8a7ad7d56467ccff5787149ee2d79f0097bddd29e9
+Filename: pool/6.18/linux-libc-dev_6.18.33-1_i386.deb
+Size: 1465224
+MD5sum: cbe6975e5d748734b8b117da223dbdcd
+SHA1: 54eb7a7d04333422a827b3cda0d06801d853f3ee
+SHA256: e1576a55b747bab7ab74d8c253efd5438a2bee412d2d53b0465d30d63ac6c09d
 Section: devel
 Priority: optional
 Multi-Arch: same
