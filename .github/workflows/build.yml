@@ -136,8 +136,14 @@ jobs:
 
           cp packages/*.deb "${POOL}/"
 
-          # Keep the 3 most recent versions of each package type, remove the rest
-          for pkg in linux-image linux-headers linux-libc-dev; do
+          # Keep only the latest metapackage (prevents apt treating old metapackage
+          # versions in the Packages index as downgrade candidates, which would
+          # stop apt autoremove from cleaning up old versioned kernels)
+          ls -t "${POOL}/linux-image-openframe-"*.deb 2>/dev/null | tail -n +2 | xargs -r rm -v
+
+          # Keep the 3 most recent versions of each versioned package type
+          ls -t "${POOL}/linux-image-[0-9]"*.deb 2>/dev/null | tail -n +4 | xargs -r rm -v
+          for pkg in linux-headers linux-libc-dev; do
             ls -t "${POOL}/${pkg}"*.deb 2>/dev/null | tail -n +4 | xargs -r rm -v
           done
 
