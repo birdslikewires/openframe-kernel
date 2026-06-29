@@ -22,9 +22,6 @@ concurrency:
   group: build-kernel
   cancel-in-progress: false
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
 
   build:
@@ -34,7 +31,7 @@ jobs:
       KERNEL_VERSION: ${{ inputs.kernel_version }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install build dependencies
         run: |
@@ -45,7 +42,7 @@ jobs:
             debhelper dpkg-dev rsync libncurses-dev apt-utils kmod cpio lsb-release libdw-dev python3
 
       - name: Checkout apt repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: repo
           path: apt-repo
@@ -61,7 +58,7 @@ jobs:
           echo "PKG_REVISION=${PKG_REVISION}" >> $GITHUB_ENV
 
       - name: Cache kernel tarball
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: linux-${{ inputs.kernel_version }}.tar.xz
           key: kernel-tarball-${{ inputs.kernel_version }}
