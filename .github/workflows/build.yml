@@ -248,6 +248,15 @@ jobs:
               packages/*.deb
           fi
 
+      - name: Delete old GitHub releases and tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --repo ${{ github.repository }} --limit 100 --json tagName \
+            --jq '.[6:][].tagName' | while read -r tag; do
+            gh release delete "$tag" --repo ${{ github.repository }} --yes --cleanup-tag
+          done
+
       - name: Dispatch image build in openframe-linux
         env:
           GH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
