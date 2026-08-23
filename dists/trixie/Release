@@ -1,7 +1,7 @@
 Architectures: i386
 Codename: trixie
 Components: 6.12 6.18
-Date: Wed, 19 Aug 2026 18:39:57 +0000
+Date: Sun, 23 Aug 2026 18:33:19 +0000
 Description: OpenFrame Kernel Packages
 Label: OpenFrame Kernel
 Origin: OpenFrame Kernel
@@ -9,24 +9,24 @@ Suite: trixie
 MD5Sum:
  17229bf7bf4c76c87146dd209973f682             3337 6.12/binary-i386/Packages
  63884b0d0c6195e4619c49717902d726             1109 6.12/binary-i386/Packages.gz
- fc09291cd3bfe3f24e55311a65bef1da             9673 6.18/binary-i386/Packages
- 5f09ea2ad5b5484e64e2f00f4d94e17c             2494 6.18/binary-i386/Packages.gz
- ac3d11a750e078cf132c50bef611b11f              199 Release
+ 762149f7a022e32b5b3d0ae58f794fea            10309 6.18/binary-i386/Packages
+ d8eab375d0d6f095005009d0efd3e843             2620 6.18/binary-i386/Packages.gz
+ 18cc748e0c020bbe42f051baf518d129              199 Release
 SHA1:
  8f7e6f62ee114553578172f785eb68e12048d8ec             3337 6.12/binary-i386/Packages
  1af1dbcb0890d0d55bd8388be3a26f88dad1c535             1109 6.12/binary-i386/Packages.gz
- 04714196a4076ca1ef5711bbd4e682e3da54ac65             9673 6.18/binary-i386/Packages
- 3379237f73122a463cce1e08a122b90823ef238b             2494 6.18/binary-i386/Packages.gz
- c736d0273d896d8c44b6e8f9be8f96680fba466c              199 Release
+ 57ecc1f5ef52e516efed8f0ecdf5b7ddcd30a4cd            10309 6.18/binary-i386/Packages
+ dce873d0d7a5c44d60f1735c34166f0dd7c879fd             2620 6.18/binary-i386/Packages.gz
+ 9fa0c15fb73b2f0067a70f5b7b23181f4f1f0e68              199 Release
 SHA256:
  ebc65afee2a01bbba7616b9b6d8e9ecc61733552b920c1d248e2581cb26a5045             3337 6.12/binary-i386/Packages
  ca6727dffd9916707c248b45184e77c61156dda6fcb0539a4ff42e0ca81373a2             1109 6.12/binary-i386/Packages.gz
- 3c87cdf16031b159305e1dd294ff01edb8b31e403a597eea0bc347be6b6b557d             9673 6.18/binary-i386/Packages
- 42b6713809038b66d7f92930be488e023d9c644fecf917c4909c7c66b2cd83ad             2494 6.18/binary-i386/Packages.gz
- 2fdc4e3cb927be4827de449b071923a3bae3ecd8f71c9e924e57fc553bad2e8e              199 Release
+ 2ae7668b04e2161a8ed2c7abb09e0237573cfd75f0a696e941fba8b25c436091            10309 6.18/binary-i386/Packages
+ 79cbbe580ac4b1d152fe8dab0e6c0aed019e6e63a76f0885da5fd838b8c1458a             2620 6.18/binary-i386/Packages.gz
+ c9b0c820b7c66cc7975a25b6f6030363e9be8ac759693374cd01364ddeb4cdd2              199 Release
 SHA512:
  5ac084c0caf86abfbde852fd77123bdfea37037bf51f82d86b4839117c1146024f6f2a0c52628ed9df4b69c6f4e5615a3f7e96344f3d06e76ba95416652e942c             3337 6.12/binary-i386/Packages
  c8ed65c75a7e77bde863c5654d111c7c881c1bf250303679c625c400849220973af2434becf1136b2884e69c7869ad8014213386392c4af3b857d11066f68da2             1109 6.12/binary-i386/Packages.gz
- 068163c61ec143896df9017290b3c7673ceb71e13d59965103332bf80356f290948f6a84785a485707d46590eb1af05c02934d558a4dc5ee066650662ebcaea2             9673 6.18/binary-i386/Packages
- 0b544c284f73e53a9778c02fcaafaaf0e3e5f537e181753448a092633e6c6eb32ceebd39af72d03dbb68e46281b2f9d9507eccdfc35d309f76fc77511eee90d8             2494 6.18/binary-i386/Packages.gz
- 9b0a3011a957a813b0968a4fc260ee99dc970722d402f61c17468cafe5322e3b37929f16bd75cd4e91deacc01138695480b85659ab4d65a5794c3ae7e02278a3              199 Release
+ e2c06039eda8a663db364f887a4dc4a160d42454a9db1b318688b59f04608e199029e1d390081b48bc9d7ae1bbee1e240696e360bd5d00479e3e40877c7596bf            10309 6.18/binary-i386/Packages
+ c4679e16bd85772be1571a077cdb16f46f9bd0c3e43030fa05cee5da3f6501ee92abe0eb5cbda2c5408d03e168950ddcaa8b907031bc3148465ce65e0c13f92d             2620 6.18/binary-i386/Packages.gz
+ 068539c3be25117b03ab070c5bf2d618dd257f8777ee21dc6e34445753269a909570b1ff71897868a293a4447a5fa39efca3724d7ed321fe68efc902d4c418ff              199 Release
