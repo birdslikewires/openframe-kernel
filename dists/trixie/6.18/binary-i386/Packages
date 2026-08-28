@@ -1,22 +1,3 @@
-Package: linux-headers-6.18.45-openframe
-Source: linux-upstream
-Version: 6.18.45-1
-Architecture: i386
-Maintainer: root <root@c9832f5cbb36>
-Installed-Size: 53748
-Filename: pool/6.18/linux-headers-6.18.45-openframe_6.18.45-1_i386.deb
-Size: 9141688
-MD5sum: 087d23a09d91a9e8745d98dea4297b8a
-SHA1: d3e88799d3e6be1b44aec2883ad42cc642963b36
-SHA256: 3e4b4558048e15eb5cd0a95c8ea88e43c6e50500ed93fff6ab051bac9f283398
-Section: kernel
-Priority: optional
-Homepage: https://www.kernel.org/
-Description: Linux kernel headers for 6.18.45-openframe on i386
- This package provides kernel header files for 6.18.45-openframe on i386
- .
- This is useful for people who need to build external modules
-
 Package: linux-headers-6.18.46-openframe
 Source: linux-upstream
 Version: 6.18.46-1
@@ -52,6 +33,25 @@ Priority: optional
 Homepage: https://www.kernel.org/
 Description: Linux kernel headers for 6.18.47-openframe on i386
  This package provides kernel header files for 6.18.47-openframe on i386
+ .
+ This is useful for people who need to build external modules
+
+Package: linux-headers-6.18.48-openframe
+Source: linux-upstream
+Version: 6.18.48-1
+Architecture: i386
+Maintainer: root <root@8de2a3035350>
+Installed-Size: 53750
+Filename: pool/6.18/linux-headers-6.18.48-openframe_6.18.48-1_i386.deb
+Size: 9142248
+MD5sum: c91e02d94a37fa525e2c18bb2c979455
+SHA1: 96b40a10477d3c03aa7f0c63ce7bb4a18e632ff0
+SHA256: 7a637609bba20e1ba4fc47a8244e20799e77ca5dcb8ea0f48844b5b7f4d9c800
+Section: kernel
+Priority: optional
+Homepage: https://www.kernel.org/
+Description: Linux kernel headers for 6.18.48-openframe on i386
+ This package provides kernel header files for 6.18.48-openframe on i386
  .
  This is useful for people who need to build external modules
 
@@ -271,32 +271,50 @@ Description: Linux kernel, version 6.18.47-openframe
  This package contains the Linux kernel, modules and corresponding other
  files, version: 6.18.47-openframe.
 
+Package: linux-image-6.18.48-openframe
+Source: linux-upstream
+Version: 6.18.48-1
+Architecture: i386
+Maintainer: root <root@8de2a3035350>
+Installed-Size: 30014
+Filename: pool/6.18/linux-image-6.18.48-openframe_6.18.48-1_i386.deb
+Size: 11845188
+MD5sum: 794585dfd17cffd5f36b49c8b387c866
+SHA1: 1bc76b30815e6b820267bea6c758d98766dc9188
+SHA256: 6775ff073e41131bb2ae28cb0acd2e6fd1584a40eb5ae95b81d78772763e141b
+Section: kernel
+Priority: optional
+Homepage: https://www.kernel.org/
+Description: Linux kernel, version 6.18.48-openframe
+ This package contains the Linux kernel, modules and corresponding other
+ files, version: 6.18.48-openframe.
+
 Package: linux-image-openframe-6.18
-Version: 6.18.47
+Version: 6.18.48
 Architecture: i386
 Maintainer: OpenFrame Project <noreply@openbeak.net>
-Depends: linux-image-6.18.47-openframe
-Filename: pool/6.18/linux-image-openframe-6.18_6.18.47_i386.deb
+Depends: linux-image-6.18.48-openframe
+Filename: pool/6.18/linux-image-openframe-6.18_6.18.48_i386.deb
 Size: 784
-MD5sum: a6c2a4a529591af8fa16a5239b89f397
-SHA1: 358509ece05e5e647e6b57d95a411961b29e0520
-SHA256: 732826dce55ed8efb53f24354f5ce7d9eaf6c9e0a24059cbb0fcfc5243f7d78e
+MD5sum: 140ac580635c140c157c93b6c87b9b59
+SHA1: 32ac6c411897833d6034aea3b27990b94da4e14b
+SHA256: 0cf5098fc630b1ff4bd72ea524dd531627e3f52bcb98dd4ff0bae6b12991a813
 Description: OpenFrame kernel metapackage (6.18 series)
  Tracks the latest OpenFrame Linux 6.18 kernel.
  Install this package to receive kernel updates via apt upgrade.
 
 Package: linux-libc-dev
 Source: linux-upstream
-Version: 6.18.47-1
+Version: 6.18.48-1
 Architecture: i386
-Maintainer: root <root@ccf0574eb318>
+Maintainer: root <root@8de2a3035350>
 Installed-Size: 7555
 Provides: linux-kernel-headers
-Filename: pool/6.18/linux-libc-dev_6.18.47-1_i386.deb
-Size: 1465188
-MD5sum: ac5efc613f5798dda7ed0c4362858ac8
-SHA1: fad540e00c06ef18365258ce6a507b4de7e2a6ec
-SHA256: 6f7dd7f1fdc635f9b91f8bca7dbe1526014d2f9441f66e258169e590fb6ddbff
+Filename: pool/6.18/linux-libc-dev_6.18.48-1_i386.deb
+Size: 1465092
+MD5sum: ad4110a4a666d383c3c5c9074c66ecce
+SHA1: 9b255678e35bc79c887c52123f2040b5c064b205
+SHA256: a90229430f42a2b2f5a7d8d4ecea59b82bc45a258c444c96aba17063eb64519d
 Section: devel
 Priority: optional
 Multi-Arch: same
