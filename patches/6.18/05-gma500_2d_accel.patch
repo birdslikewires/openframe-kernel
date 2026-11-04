@@ -1,0 +1,367 @@
+Restore 2D acceleration to gma500 (Poulsbo SGX 2D engine)
+
+The mainline gma500 driver dropped its 2D-accelerated fbcon path. This patch
+brings it back for the OpenFrame (O2 Joggler): framebuffer-console fillrect and
+copyarea are submitted to the SGX 2D slave port via the historical Intel/
+Tungsten PSB 2D command protocol; imageblit stays software. Each accelerated op
+is synchronous (waits for the engine to drain) so subsequent CPU framebuffer
+access stays coherent. Verified on OpenFrame hardware (6.18.60-openframe): the
+2D engine clears and scrolls the console correctly, no BIF faults.
+
+Apply after 01-openframe_backlight_driver.patch.
+---
+--- /dev/null
++++ b/drivers/gpu/drm/gma500/accel_2d.c
+@@ -0,0 +1,274 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/**************************************************************************
++ * 2D acceleration for the GMA500 (Poulsbo SGX 2D engine).
++ *
++ * Restored for the OpenFrame project. The mainline gma500 driver dropped its
++ * 2D-accelerated fbcon path; this file brings back accelerated fillrect and
++ * copyarea by submitting PSB 2D command streams to the SGX 2D slave port.
++ * imageblit stays software (cfb_imageblit). Each accelerated op is synchronous
++ * (it waits for the engine to drain) so that following CPU access to the
++ * framebuffer is coherent.
++ *
++ * Based on the historical Intel/Tungsten Graphics gma500 2D code.
++ **************************************************************************/
++
++#include <linux/fb.h>
++#include <linux/delay.h>
++#include <linux/jiffies.h>
++
++#include <drm/drm_fb_helper.h>
++#include <drm/drm_framebuffer.h>
++#include <drm/drm_fourcc.h>
++#include <drm/drm_gem.h>
++
++#include "psb_drv.h"
++#include "psb_reg.h"
++#include "gem.h"
++#include "framebuffer.h"
++
++static int psb_2d_wait_available(struct drm_psb_private *dev_priv, unsigned size)
++{
++	uint32_t avail = PSB_RSGX32(PSB_CR_2D_SOCIF) & _PSB_C2_SOCIF_FREESPACE_MASK;
++	unsigned long t = jiffies + HZ;
++
++	while (avail < size) {
++		cpu_relax();
++		avail = PSB_RSGX32(PSB_CR_2D_SOCIF) & _PSB_C2_SOCIF_FREESPACE_MASK;
++		if (time_after(jiffies, t))
++			return -EIO;
++	}
++	return 0;
++}
++
++static int psbfb_2d_submit(struct drm_psb_private *dev_priv, uint32_t *cmdbuf,
++			   unsigned size)
++{
++	unsigned long flags;
++	unsigned submit_size;
++	int ret = 0, i;
++
++	spin_lock_irqsave(&dev_priv->lock_2d, flags);
++	while (size > 0) {
++		submit_size = (size < 0x60) ? size : 0x60;
++		size -= submit_size;
++		ret = psb_2d_wait_available(dev_priv, submit_size);
++		if (ret)
++			break;
++		submit_size <<= 2;
++		for (i = 0; i < submit_size; i += 4)
++			PSB_WSGX32(*cmdbuf++, PSB_SGX_2D_SLAVE_PORT + i);
++		(void)PSB_RSGX32(PSB_SGX_2D_SLAVE_PORT + i - 4);
++	}
++	spin_unlock_irqrestore(&dev_priv->lock_2d, flags);
++	return ret;
++}
++
++/* Wait for the 2D engine to go idle so CPU framebuffer access is coherent. */
++static int psb_2d_idle(struct drm_psb_private *dev_priv)
++{
++	unsigned long t = jiffies + HZ;
++
++	do {
++		if ((PSB_RSGX32(PSB_CR_2D_SOCIF) == _PSB_C2_SOCIF_EMPTY) &&
++		    ((PSB_RSGX32(PSB_CR_2D_BLIT_STATUS) & _PSB_C2B_STATUS_BUSY) == 0))
++			return 0;
++		cpu_relax();
++	} while (time_before(jiffies, t));
++	return -EBUSY;
++}
++
++static u32 psb_2d_dst_format(int cpp, int depth)
++{
++	switch (cpp) {
++	case 1:
++		return PSB_2D_DST_332RGB;
++	case 2:
++		return (depth == 15) ? PSB_2D_DST_555RGB : PSB_2D_DST_565RGB;
++	default:
++		return PSB_2D_DST_8888ARGB;
++	}
++}
++
++static u32 psb_2d_src_format(int cpp, int depth)
++{
++	switch (cpp) {
++	case 1:
++		return PSB_2D_SRC_332RGB;
++	case 2:
++		return (depth == 15) ? PSB_2D_SRC_555RGB : PSB_2D_SRC_565RGB;
++	default:
++		return PSB_2D_SRC_8888ARGB;
++	}
++}
++
++static int psb_accel_fill(struct drm_psb_private *dev_priv, u32 offset,
++			  u32 stride, u32 dst_format, u32 color,
++			  u16 dx, u16 dy, u16 sx, u16 sy)
++{
++	u32 buf[8];
++
++	buf[0] = PSB_2D_FENCE_BH;
++	buf[1] = PSB_2D_DST_SURF_BH | dst_format |
++		 (stride << PSB_2D_DST_STRIDE_SHIFT);
++	buf[2] = offset;
++	buf[3] = PSB_2D_BLIT_BH | PSB_2D_ROT_NONE | PSB_2D_COPYORDER_TL2BR |
++		 PSB_2D_DSTCK_DISABLE | PSB_2D_SRCCK_DISABLE |
++		 PSB_2D_USE_FILL | PSB_2D_ROP3_PATCOPY;
++	buf[4] = color;
++	buf[5] = (dx << PSB_2D_DST_XSTART_SHIFT) | (dy << PSB_2D_DST_YSTART_SHIFT);
++	buf[6] = (sx << PSB_2D_DST_XSIZE_SHIFT) | (sy << PSB_2D_DST_YSIZE_SHIFT);
++	buf[7] = PSB_2D_FLUSH_BH;
++	return psbfb_2d_submit(dev_priv, buf, 8);
++}
++
++static u32 psb_accel_copy_direction(int xdir, int ydir)
++{
++	if (xdir < 0)
++		return (ydir < 0) ? PSB_2D_COPYORDER_BR2TL : PSB_2D_COPYORDER_TR2BL;
++	return (ydir < 0) ? PSB_2D_COPYORDER_BL2TR : PSB_2D_COPYORDER_TL2BR;
++}
++
++static int psb_accel_copy(struct drm_psb_private *dev_priv, u32 offset,
++			  u32 stride, u32 src_format, u32 dst_format,
++			  u16 sx, u16 sy, u16 dx, u16 dy, u16 w, u16 h)
++{
++	u32 buf[10], direction, blit;
++	u32 *p = buf;
++
++	direction = psb_accel_copy_direction(sx - dx, sy - dy);
++	if (direction == PSB_2D_COPYORDER_BR2TL ||
++	    direction == PSB_2D_COPYORDER_TR2BL) {
++		sx += w - 1;
++		dx += w - 1;
++	}
++	if (direction == PSB_2D_COPYORDER_BR2TL ||
++	    direction == PSB_2D_COPYORDER_BL2TR) {
++		sy += h - 1;
++		dy += h - 1;
++	}
++
++	blit = PSB_2D_BLIT_BH | PSB_2D_ROT_NONE | PSB_2D_DSTCK_DISABLE |
++	       PSB_2D_SRCCK_DISABLE | PSB_2D_USE_PAT | PSB_2D_ROP3_SRCCOPY |
++	       direction;
++
++	*p++ = PSB_2D_FENCE_BH;
++	*p++ = PSB_2D_DST_SURF_BH | dst_format | (stride << PSB_2D_DST_STRIDE_SHIFT);
++	*p++ = offset;
++	*p++ = PSB_2D_SRC_SURF_BH | src_format | (stride << PSB_2D_SRC_STRIDE_SHIFT);
++	*p++ = offset;
++	*p++ = PSB_2D_SRC_OFF_BH | (sx << PSB_2D_SRCOFF_XSTART_SHIFT) |
++	       (sy << PSB_2D_SRCOFF_YSTART_SHIFT);
++	*p++ = blit;
++	*p++ = (dx << PSB_2D_DST_XSTART_SHIFT) | (dy << PSB_2D_DST_YSTART_SHIFT);
++	*p++ = (w << PSB_2D_DST_XSIZE_SHIFT) | (h << PSB_2D_DST_YSIZE_SHIFT);
++	*p++ = PSB_2D_FLUSH_BH;
++	return psbfb_2d_submit(dev_priv, buf, p - buf);
++}
++
++static void psb_fb_params(struct fb_info *info, struct drm_device **dev,
++			  struct drm_psb_private **dev_priv, u32 *offset,
++			  u32 *stride, int *cpp, int *depth)
++{
++	struct drm_fb_helper *fb_helper = info->par;
++	struct drm_framebuffer *fb = fb_helper->fb;
++
++	*dev = fb->dev;
++	*dev_priv = to_drm_psb_private(*dev);
++	*offset = to_psb_gem_object(fb->obj[0])->offset;
++	*stride = fb->pitches[0];
++	*cpp = fb->format->cpp[0];
++	*depth = fb->format->depth;
++}
++
++void psbfb_fillrect(struct fb_info *info, const struct fb_fillrect *rect)
++{
++	struct drm_fb_helper *fb_helper = info->par;
++	struct drm_device *dev;
++	struct drm_psb_private *dev_priv;
++	u32 offset, stride, color;
++	int cpp, depth;
++
++	if (unlikely(info->state != FBINFO_STATE_RUNNING))
++		return;
++	if (!fb_helper->fb || rect->rop != ROP_COPY ||
++	    rect->width == 8 || rect->height == 8 ||
++	    (info->flags & FBINFO_HWACCEL_DISABLED)) {
++		cfb_fillrect(info, rect);
++		return;
++	}
++
++	psb_fb_params(info, &dev, &dev_priv, &offset, &stride, &cpp, &depth);
++
++	if (info->fix.visual == FB_VISUAL_TRUECOLOR ||
++	    info->fix.visual == FB_VISUAL_DIRECTCOLOR)
++		color = ((u32 *)info->pseudo_palette)[rect->color];
++	else
++		color = rect->color;
++
++	if (!gma_power_begin(dev, false)) {
++		cfb_fillrect(info, rect);
++		return;
++	}
++	if (psb_accel_fill(dev_priv, offset, stride,
++			   psb_2d_dst_format(cpp, depth), color,
++			   rect->dx, rect->dy, rect->width, rect->height)) {
++		gma_power_end(dev);
++		cfb_fillrect(info, rect);
++		return;
++	}
++	psb_2d_idle(dev_priv);
++	gma_power_end(dev);
++}
++
++void psbfb_copyarea(struct fb_info *info, const struct fb_copyarea *a)
++{
++	struct drm_fb_helper *fb_helper = info->par;
++	struct drm_device *dev;
++	struct drm_psb_private *dev_priv;
++	u32 offset, stride;
++	int cpp, depth;
++
++	if (unlikely(info->state != FBINFO_STATE_RUNNING))
++		return;
++	if (!fb_helper->fb || a->width == 8 || a->height == 8 ||
++	    (info->flags & FBINFO_HWACCEL_DISABLED)) {
++		cfb_copyarea(info, a);
++		return;
++	}
++
++	psb_fb_params(info, &dev, &dev_priv, &offset, &stride, &cpp, &depth);
++
++	if (!gma_power_begin(dev, false)) {
++		cfb_copyarea(info, a);
++		return;
++	}
++	if (psb_accel_copy(dev_priv, offset, stride,
++			   psb_2d_src_format(cpp, depth),
++			   psb_2d_dst_format(cpp, depth),
++			   a->sx, a->sy, a->dx, a->dy, a->width, a->height)) {
++		gma_power_end(dev);
++		cfb_copyarea(info, a);
++		return;
++	}
++	psb_2d_idle(dev_priv);
++	gma_power_end(dev);
++}
++
++int psbfb_sync(struct fb_info *info)
++{
++	struct drm_fb_helper *fb_helper = info->par;
++	struct drm_framebuffer *fb = fb_helper->fb;
++	struct drm_device *dev;
++	struct drm_psb_private *dev_priv;
++	int ret;
++
++	if (!fb)
++		return 0;
++	dev = fb->dev;
++	dev_priv = to_drm_psb_private(dev);
++	if (!gma_power_begin(dev, false))
++		return 0;
++	ret = psb_2d_idle(dev_priv);
++	gma_power_end(dev);
++	return ret;
++}
+--- a/drivers/gpu/drm/gma500/Makefile	2026-10-30 12:06:41
++++ b/drivers/gpu/drm/gma500/Makefile	2026-11-04 22:08:32
+@@ -4,6 +4,7 @@
+ #
+ 
+ gma500_gfx-y += \
++	  accel_2d.o \
+ 	  backlight.o \
+ 	  cdv_device.o \
+ 	  cdv_intel_crt.o \
+--- a/drivers/gpu/drm/gma500/psb_drv.h	2026-10-30 12:06:41
++++ b/drivers/gpu/drm/gma500/psb_drv.h	2026-11-04 22:07:32
+@@ -417,6 +417,7 @@
+ 	uint32_t pipestat[PSB_NUM_PIPE];
+ 
+ 	spinlock_t irqmask_lock;
++	spinlock_t lock_2d;		/* serialises 2D command submission */
+ 	bool irq_enabled;
+ 
+ 	/* Power */
+--- a/drivers/gpu/drm/gma500/psb_drv.c	2026-10-30 12:06:41
++++ b/drivers/gpu/drm/gma500/psb_drv.c	2026-11-04 22:07:35
+@@ -144,6 +144,7 @@
+ 	    (stolen_gtt << PAGE_SHIFT) * 1024;
+ 
+ 	spin_lock_init(&dev_priv->irqmask_lock);
++	spin_lock_init(&dev_priv->lock_2d);
+ 
+ 	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK0);
+ 	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK1);
+--- a/drivers/gpu/drm/gma500/framebuffer.h	2026-10-30 12:06:41
++++ b/drivers/gpu/drm/gma500/framebuffer.h	2026-11-04 22:07:59
+@@ -13,5 +13,13 @@
+ 
+ extern int gma_connector_clones(struct drm_device *dev, int type_mask);
+ 
++/* accel_2d.c: 2D-accelerated fbcon operations */
++struct fb_info;
++struct fb_fillrect;
++struct fb_copyarea;
++void psbfb_fillrect(struct fb_info *info, const struct fb_fillrect *rect);
++void psbfb_copyarea(struct fb_info *info, const struct fb_copyarea *region);
++int psbfb_sync(struct fb_info *info);
++
+ #endif
+ 
+--- a/drivers/gpu/drm/gma500/fbdev.c	2026-10-30 12:06:41
++++ b/drivers/gpu/drm/gma500/fbdev.c	2026-11-04 22:08:28
+@@ -14,6 +14,7 @@
+ 
+ #include "gem.h"
+ #include "psb_drv.h"
++#include "framebuffer.h"
+ 
+ /*
+  * VM area struct
+@@ -93,7 +94,10 @@
+ 	.owner = THIS_MODULE,
+ 	__FB_DEFAULT_IOMEM_OPS_RDWR,
+ 	DRM_FB_HELPER_DEFAULT_OPS,
+-	__FB_DEFAULT_IOMEM_OPS_DRAW,
++	.fb_fillrect = psbfb_fillrect,		/* 2D-accelerated */
++	.fb_copyarea = psbfb_copyarea,		/* 2D-accelerated */
++	.fb_imageblit = cfb_imageblit,		/* software (glyph upload) */
++	.fb_sync = psbfb_sync,
+ 	.fb_mmap = psb_fbdev_fb_mmap,
+ 	.fb_destroy = psb_fbdev_fb_destroy,
+ };
+@@ -178,6 +182,9 @@
+ 
+ 	drm_fb_helper_fill_info(info, fb_helper, sizes);
+ 
++	/* fillrect/copyarea run on the SGX 2D engine (accel_2d.c) */
++	info->flags |= FBINFO_HWACCEL_FILLRECT | FBINFO_HWACCEL_COPYAREA;
++
+ 	info->fix.smem_start = dev_priv->stolen_base + backing->offset;
+ 	info->fix.smem_len = size;
+ 	info->fix.ywrapstep = 0;
