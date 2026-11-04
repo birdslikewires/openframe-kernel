@@ -136,12 +136,14 @@ jobs:
           # Keep only the latest metapackage (prevents apt treating old metapackage
           # versions in the Packages index as downgrade candidates, which would
           # stop apt autoremove from cleaning up old versioned kernels)
-          ls -t "${POOL}/linux-image-openframe-"*.deb 2>/dev/null | tail -n +2 | xargs -r rm -v
+          ls "${POOL}/linux-image-openframe-"*.deb 2>/dev/null | sort -rV | tail -n +2 | xargs -r rm -v
 
-          # Keep the 3 most recent versions of each versioned package type
-          ls -t "${POOL}/linux-image-[0-9]"*.deb 2>/dev/null | tail -n +4 | xargs -r rm -v
+          # Keep only the latest version of each versioned package type; older ones
+          # remain available from the GitHub releases (sorted by version, as file
+          # times all date from the checkout)
+          ls "${POOL}/linux-image-"[0-9]*.deb 2>/dev/null | sort -rV | tail -n +2 | xargs -r rm -v
           for pkg in linux-headers linux-libc-dev; do
-            ls -t "${POOL}/${pkg}"*.deb 2>/dev/null | tail -n +4 | xargs -r rm -v
+            ls "${POOL}/${pkg}"*.deb 2>/dev/null | sort -rV | tail -n +2 | xargs -r rm -v
           done
 
           # Export public signing key for users (binary dearmored for signed-by)
