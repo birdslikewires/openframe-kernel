@@ -1,0 +1,321 @@
+gma500: scroll the framebuffer console on the Poulsbo SGX 2D engine
+
+Restores fbcon copyarea on the SGX 2D engine, which mainline gma500 dropped.
+Needs CONFIG_FRAMEBUFFER_CONSOLE_LEGACY_ACCELERATION=y, or fbcon never calls it.
+Fills stay in software: the CPU beats the engine at every fill size here.
+
+The first engine timeout turns acceleration off until reboot and the console
+carries on in software. Waits are bounded by loop count, as console drawing may
+run with interrupts off. The engine is not used while an oops is printing, nor
+after suspend, as resume does not restore the SGX MMU or 2D request base. Boot
+with gma500_gfx.accel_2d=0 to disable.
+
+Measured on one OpenFrame (Z520, 800x480), 6.18.60: full-screen copy takes 2.7ms
+against 48ms on the CPU, but fbcon's software redraw never reads the framebuffer
+and skips unchanged cells, so scrolling real text is slower with this enabled
+(ls 2.9 vs 1.4ms/line, prose 3.5 vs 2.2, random text 3.7 vs 3.0).
+---
+--- a/drivers/gpu/drm/gma500/Makefile	2026-11-05 09:08:43
++++ b/drivers/gpu/drm/gma500/Makefile	2026-11-05 09:08:43
+@@ -37,6 +37,6 @@
+ 	  psb_irq.o
+ 
+ gma500_gfx-$(CONFIG_ACPI) +=  opregion.o
+-gma500_gfx-$(CONFIG_DRM_FBDEV_EMULATION) +=  fbdev.o
++gma500_gfx-$(CONFIG_DRM_FBDEV_EMULATION) +=  accel_2d.o fbdev.o
+ 
+ obj-$(CONFIG_DRM_GMA500) += gma500_gfx.o
+--- /dev/null
++++ b/drivers/gpu/drm/gma500/accel_2d.c	2026-11-05 09:08:43
+@@ -0,0 +1,209 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Console scroll acceleration for Poulsbo (GMA500), using the SGX 2D engine.
++ *
++ * Mainline gma500 dropped its accelerated fbcon path. This restores copyarea,
++ * which needs CONFIG_FRAMEBUFFER_CONSOLE_LEGACY_ACCELERATION for fbcon to use
++ * it. A CPU copy has to read back from write-combined memory, and is about 17
++ * times slower than the engine for a full-screen scroll on an Atom Z520.
++ *
++ * Only copies use the engine. The CPU writes to the framebuffer faster than the
++ * engine can fill it at every size, so fillrect and imageblit stay in software.
++ *
++ * Console drawing can run in any context, including with interrupts disabled,
++ * so the rules here are:
++ *  - every operation drains the engine before returning, so that CPU access
++ *    to the framebuffer afterwards is coherent;
++ *  - waits are bounded by a loop count, not jiffies, which may not advance;
++ *  - the first engine timeout turns acceleration off until reboot, and that
++ *    operation and all later ones are drawn in software. Commands may be left
++ *    half-written in the FIFO, so the engine is never used again after that;
++ *  - nothing touches the engine while an oops or panic is being printed.
++ *
++ * Boot with gma500_gfx.accel_2d=0 to keep the console in software.
++ *
++ * Based on the historical Intel/Tungsten Graphics gma500 2D code.
++ */
++
++#include <linux/delay.h>
++#include <linux/fb.h>
++#include <linux/module.h>
++#include <linux/preempt.h>
++
++#include <drm/drm_fb_helper.h>
++#include <drm/drm_fourcc.h>
++#include <drm/drm_framebuffer.h>
++#include <drm/drm_gem.h>
++
++#include "framebuffer.h"
++#include "gem.h"
++#include "power.h"
++#include "psb_drv.h"
++#include "psb_reg.h"
++
++/* A full-screen copy takes a few milliseconds; this is far beyond any of them. */
++#define PSB_2D_TIMEOUT_US	100000
++
++static bool accel_2d_param = true;
++module_param_named(accel_2d, accel_2d_param, bool, 0400);
++MODULE_PARM_DESC(accel_2d, "Scroll the framebuffer console with the SGX 2D engine (default: on)");
++
++static int psb_2d_wait_space(struct drm_psb_private *dev_priv, unsigned int size)
++{
++	int us;
++
++	for (us = 0; us < PSB_2D_TIMEOUT_US; us++) {
++		if ((PSB_RSGX32(PSB_CR_2D_SOCIF) & _PSB_C2_SOCIF_FREESPACE_MASK) >= size)
++			return 0;
++		udelay(1);
++	}
++	return -ETIMEDOUT;
++}
++
++static int psb_2d_submit(struct drm_psb_private *dev_priv, const u32 *cmd,
++			 unsigned int size)
++{
++	unsigned long flags;
++	unsigned int i;
++	int ret;
++
++	spin_lock_irqsave(&dev_priv->lock_2d, flags);
++	ret = psb_2d_wait_space(dev_priv, size);
++	if (!ret) {
++		for (i = 0; i < size; i++)
++			PSB_WSGX32(cmd[i], PSB_SGX_2D_SLAVE_PORT + (i << 2));
++		(void)PSB_RSGX32(PSB_SGX_2D_SLAVE_PORT + ((size - 1) << 2));
++	}
++	spin_unlock_irqrestore(&dev_priv->lock_2d, flags);
++	return ret;
++}
++
++static int psb_2d_idle(struct drm_psb_private *dev_priv)
++{
++	int us;
++
++	for (us = 0; us < PSB_2D_TIMEOUT_US; us++) {
++		if (PSB_RSGX32(PSB_CR_2D_SOCIF) == _PSB_C2_SOCIF_EMPTY &&
++		    !(PSB_RSGX32(PSB_CR_2D_BLIT_STATUS) & _PSB_C2B_STATUS_BUSY))
++			return 0;
++		udelay(1);
++	}
++	return -ETIMEDOUT;
++}
++
++/* Run one command stream to completion, giving up on the engine if it stalls. */
++static int psb_2d_run(struct drm_device *dev, const u32 *cmd, unsigned int size)
++{
++	struct drm_psb_private *dev_priv = to_drm_psb_private(dev);
++	int ret;
++
++	ret = psb_2d_submit(dev_priv, cmd, size);
++	if (!ret)
++		ret = psb_2d_idle(dev_priv);
++	if (ret && xchg(&dev_priv->accel_2d_ok, false))
++		dev_err(dev->dev,
++			"2D engine stalled, console falls back to software: SOCIF=%08x BLIT=%08x BIF_INT=%08x\n",
++			PSB_RSGX32(PSB_CR_2D_SOCIF),
++			PSB_RSGX32(PSB_CR_2D_BLIT_STATUS),
++			PSB_RSGX32(PSB_CR_BIF_INT_STAT));
++	return ret;
++}
++
++static struct drm_device *psb_2d_begin(struct fb_info *info)
++{
++	struct drm_fb_helper *fb_helper = info->par;
++	struct drm_psb_private *dev_priv;
++
++	if (!fb_helper->fb || oops_in_progress || in_nmi())
++		return NULL;
++	dev_priv = to_drm_psb_private(fb_helper->dev);
++	if (!READ_ONCE(dev_priv->accel_2d_ok))
++		return NULL;
++	if (!gma_power_begin(fb_helper->dev, false))
++		return NULL;
++	return fb_helper->dev;
++}
++
++static int psb_2d_copy(struct fb_info *info, const struct fb_copyarea *a)
++{
++	struct drm_fb_helper *fb_helper = info->par;
++	u32 sx = a->sx, sy = a->sy, dx = a->dx, dy = a->dy;
++	struct drm_device *dev;
++	struct drm_framebuffer *fb;
++	u32 cmd[10], order, offset, pitch;
++	int ret;
++
++	/* The engine mishandles 8 pixel wide or high operations. */
++	if (a->width == 8 || a->height == 8)
++		return -EOPNOTSUPP;
++	dev = psb_2d_begin(info);
++	if (!dev)
++		return -EAGAIN;
++	fb = fb_helper->fb;
++	offset = to_psb_gem_object(fb->obj[0])->offset;
++	pitch = fb->pitches[0];
++
++	/* Copy away from the overlap, starting from the matching corner. */
++	if (sx < dx) {
++		order = sy < dy ? PSB_2D_COPYORDER_BR2TL : PSB_2D_COPYORDER_TR2BL;
++		sx += a->width - 1;
++		dx += a->width - 1;
++	} else {
++		order = sy < dy ? PSB_2D_COPYORDER_BL2TR : PSB_2D_COPYORDER_TL2BR;
++	}
++	if (sy < dy) {
++		sy += a->height - 1;
++		dy += a->height - 1;
++	}
++
++	cmd[0] = PSB_2D_FENCE_BH;
++	cmd[1] = PSB_2D_DST_SURF_BH | PSB_2D_DST_8888ARGB |
++		 (pitch << PSB_2D_DST_STRIDE_SHIFT);
++	cmd[2] = offset;
++	cmd[3] = PSB_2D_SRC_SURF_BH | PSB_2D_SRC_8888ARGB |
++		 (pitch << PSB_2D_SRC_STRIDE_SHIFT);
++	cmd[4] = offset;
++	cmd[5] = PSB_2D_SRC_OFF_BH | (sx << PSB_2D_SRCOFF_XSTART_SHIFT) |
++		 (sy << PSB_2D_SRCOFF_YSTART_SHIFT);
++	cmd[6] = PSB_2D_BLIT_BH | PSB_2D_ROT_NONE | PSB_2D_DSTCK_DISABLE |
++		 PSB_2D_SRCCK_DISABLE | PSB_2D_USE_PAT | PSB_2D_ROP3_SRCCOPY |
++		 order;
++	cmd[7] = (dx << PSB_2D_DST_XSTART_SHIFT) | (dy << PSB_2D_DST_YSTART_SHIFT);
++	cmd[8] = (a->width << PSB_2D_DST_XSIZE_SHIFT) |
++		 (a->height << PSB_2D_DST_YSIZE_SHIFT);
++	cmd[9] = PSB_2D_FLUSH_BH;
++
++	ret = psb_2d_run(dev, cmd, ARRAY_SIZE(cmd));
++	gma_power_end(dev);
++	return ret;
++}
++
++void psbfb_copyarea(struct fb_info *info, const struct fb_copyarea *area)
++{
++	if (unlikely(info->state != FBINFO_STATE_RUNNING))
++		return;
++	if (!area->width || !area->height)
++		return;
++	if (psb_2d_copy(info, area))
++		cfb_copyarea(info, area);
++}
++
++/*
++ * Offer acceleration to fbcon only on Poulsbo, in the one format it has been
++ * tested with, and only if the engine is alive. Everything else stays software.
++ */
++void psbfb_accel_init(struct drm_device *dev, struct fb_info *info,
++		      const struct drm_framebuffer *fb)
++{
++	struct drm_psb_private *dev_priv = to_drm_psb_private(dev);
++
++	if (!accel_2d_param || !IS_PSB(dev) || fb->format->cpp[0] != 4)
++		return;
++	if (psb_2d_idle(dev_priv)) {
++		dev_warn(dev->dev, "2D engine not idle, console stays in software\n");
++		return;
++	}
++	WRITE_ONCE(dev_priv->accel_2d_ok, true);
++	info->flags |= FBINFO_HWACCEL_COPYAREA;
++	dev_info(dev->dev, "console scrolling on the 2D engine\n");
++}
+--- a/drivers/gpu/drm/gma500/fbdev.c	2026-11-05 09:08:43
++++ b/drivers/gpu/drm/gma500/fbdev.c	2026-11-05 09:08:43
+@@ -13,6 +13,7 @@
+ #include <drm/drm_framebuffer.h>
+ 
+ #include "gem.h"
++#include "framebuffer.h"
+ #include "psb_drv.h"
+ 
+ /*
+@@ -93,7 +94,9 @@
+ 	.owner = THIS_MODULE,
+ 	__FB_DEFAULT_IOMEM_OPS_RDWR,
+ 	DRM_FB_HELPER_DEFAULT_OPS,
+-	__FB_DEFAULT_IOMEM_OPS_DRAW,
++	.fb_fillrect = cfb_fillrect,
++	.fb_copyarea = psbfb_copyarea,
++	.fb_imageblit = cfb_imageblit,
+ 	.fb_mmap = psb_fbdev_fb_mmap,
+ 	.fb_destroy = psb_fbdev_fb_destroy,
+ };
+@@ -177,6 +180,8 @@
+ 	info->screen_size = size;
+ 
+ 	drm_fb_helper_fill_info(info, fb_helper, sizes);
++
++	psbfb_accel_init(dev, info, fb);
+ 
+ 	info->fix.smem_start = dev_priv->stolen_base + backing->offset;
+ 	info->fix.smem_len = size;
+--- a/drivers/gpu/drm/gma500/framebuffer.h	2026-11-05 09:08:43
++++ b/drivers/gpu/drm/gma500/framebuffer.h	2026-11-05 09:08:43
+@@ -13,5 +13,12 @@
+ 
+ extern int gma_connector_clones(struct drm_device *dev, int type_mask);
+ 
++/* accel_2d.c: fbcon copyarea on the 2D engine */
++struct fb_info;
++struct fb_copyarea;
++void psbfb_copyarea(struct fb_info *info, const struct fb_copyarea *area);
++void psbfb_accel_init(struct drm_device *dev, struct fb_info *info,
++		      const struct drm_framebuffer *fb);
++
+ #endif
+ 
+--- a/drivers/gpu/drm/gma500/power.c	2026-11-05 09:08:43
++++ b/drivers/gpu/drm/gma500/power.c	2026-11-05 09:08:43
+@@ -179,6 +179,13 @@
+ {
+ 	struct pci_dev *pdev = to_pci_dev(_dev);
+ 	struct drm_device *dev = pci_get_drvdata(pdev);
++	struct drm_psb_private *dev_priv = to_drm_psb_private(dev);
++
++	/*
++	 * Resume does not restore the SGX MMU or the 2D request base, so the
++	 * engine must not be used again: its writes would land in the wrong place.
++	 */
++	WRITE_ONCE(dev_priv->accel_2d_ok, false);
+ 
+ 	gma_irq_uninstall(dev);
+ 	gma_suspend_display(dev);
+--- a/drivers/gpu/drm/gma500/psb_drv.c	2026-11-05 09:08:43
++++ b/drivers/gpu/drm/gma500/psb_drv.c	2026-11-05 09:08:43
+@@ -144,6 +144,7 @@
+ 	    (stolen_gtt << PAGE_SHIFT) * 1024;
+ 
+ 	spin_lock_init(&dev_priv->irqmask_lock);
++	spin_lock_init(&dev_priv->lock_2d);
+ 
+ 	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK0);
+ 	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK1);
+--- a/drivers/gpu/drm/gma500/psb_drv.h	2026-11-05 09:08:43
++++ b/drivers/gpu/drm/gma500/psb_drv.h	2026-11-05 09:08:43
+@@ -417,6 +417,8 @@
+ 	uint32_t pipestat[PSB_NUM_PIPE];
+ 
+ 	spinlock_t irqmask_lock;
++	spinlock_t lock_2d;		/* serialises 2D command submission */
++	bool accel_2d_ok;		/* console may use the 2D engine */
+ 	bool irq_enabled;
+ 
+ 	/* Power */
