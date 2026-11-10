@@ -82,6 +82,23 @@ jobs:
             patch --fuzz=3 -p1 -d "linux-${KERNEL_VERSION}" < "${patch}"
           done
 
+      # The OpenFrame's firmware hub driver (/dev/fh), from openframe-firmware's fh/, built
+      # with the kernel as a module so linux-image ships it and 'modprobe fh' just works. It
+      # only reads unless loaded with writable=1 (fh/README.md there), so one without that
+      # guard is refused.
+      - name: Add the firmware hub module
+        run: |
+          D="linux-${KERNEL_VERSION}/drivers/misc"
+          curl -fsSL --retry 3 --retry-delay 5 -o "${D}/fh.c" \
+            https://raw.githubusercontent.com/birdslikewires/openframe-firmware/main/fh/fh.c
+          sha256sum "${D}/fh.c"
+          if ! grep -q 'module_param(writable' "${D}/fh.c"; then
+            echo "fh.c has no writable=1 guard; not shipping it."
+            exit 1
+          fi
+          printf '\nconfig OPENFRAME_FH\n\ttristate "OpenFrame firmware hub (EFI flash) access"\n\tdepends on X86_32\n\thelp\n\t  /dev/fh reads the OpenFrame firmware hub chip; writing needs the\n\t  module loaded with writable=1.\n' >> "${D}/Kconfig"
+          echo 'obj-$(CONFIG_OPENFRAME_FH) += fh.o' >> "${D}/Makefile"
+
       - name: Configure kernel
         run: |
           KBRANCH=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
