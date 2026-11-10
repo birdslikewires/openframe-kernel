@@ -7,12 +7,21 @@ on:
       kernel_version:
         required: true
         type: string
+      package_revision:
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       kernel_version:
         description: 'Kernel version to build (e.g. 6.1.167)'
         required: true
         type: string
+      package_revision:
+        description: 'Package revision (e.g. 3 for 6.18.63-3); empty for one above the last in the apt repository'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -47,13 +56,28 @@ jobs:
           ref: repo
           path: apt-repo
 
+      # One above the last revision in the apt repository, or the one asked for, which must
+      # be higher still (a revision is never reused).
       - name: Determine package revision
+        env:
+          WANTED_REVISION: ${{ inputs.package_revision }}
         run: |
           KCOMPONENT=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
           POOL="apt-repo/pool/${KCOMPONENT}"
           LAST_REV=$(ls "${POOL}/linux-image-${KERNEL_VERSION}-openframe_${KERNEL_VERSION}-"*.deb 2>/dev/null \
             | grep -oP '(?<='"${KERNEL_VERSION}"'-)\d+(?=_i386\.deb)' | sort -n | tail -1)
           PKG_REVISION=$(( ${LAST_REV:-0} + 1 ))
+          if [ -n "${WANTED_REVISION}" ]; then
+            case "${WANTED_REVISION}" in
+              *[!0-9]*|0*) OK=0 ;;
+              *) [ "${WANTED_REVISION}" -ge "${PKG_REVISION}" ] && OK=1 || OK=0 ;;
+            esac
+            if [ "${OK}" != 1 ]; then
+              echo "Package revision '${WANTED_REVISION}' must be a number of at least ${PKG_REVISION}."
+              exit 1
+            fi
+            PKG_REVISION="${WANTED_REVISION}"
+          fi
           echo "Package revision: ${PKG_REVISION}"
           echo "PKG_REVISION=${PKG_REVISION}" >> $GITHUB_ENV
 
