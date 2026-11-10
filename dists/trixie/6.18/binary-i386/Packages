@@ -1,14 +1,14 @@
 Package: linux-headers-6.18.63-openframe
 Source: linux-upstream
-Version: 6.18.63-1
+Version: 6.18.63-3
 Architecture: i386
-Maintainer: root <root@63a67a97ff1d>
+Maintainer: root <root@1ec3d8adb768>
 Installed-Size: 53824
-Filename: pool/6.18/linux-headers-6.18.63-openframe_6.18.63-1_i386.deb
-Size: 9157164
-MD5sum: 9e4415d4c2ffd986d3ade82cee6db7ca
-SHA1: ee8fc3a52e2d11be04ec1b401885d83254d793f0
-SHA256: c92758fb75c930aedb3544109d23098663bba70a3318575676a7b4123550b746
+Filename: pool/6.18/linux-headers-6.18.63-openframe_6.18.63-3_i386.deb
+Size: 9157268
+MD5sum: 07cdac4f103b0f6690186a21faf32807
+SHA1: cf934e22c277ea9cbad14bbe1588527e4d85d856
+SHA256: 9b98f0d6d3cf2a0aedce188eca4974f2e914453fbf4776c9a3c5fd6c0d446666
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -19,15 +19,15 @@ Description: Linux kernel headers for 6.18.63-openframe on i386
 
 Package: linux-image-6.18.63-openframe
 Source: linux-upstream
-Version: 6.18.63-1
+Version: 6.18.63-3
 Architecture: i386
-Maintainer: root <root@63a67a97ff1d>
-Installed-Size: 30254
-Filename: pool/6.18/linux-image-6.18.63-openframe_6.18.63-1_i386.deb
-Size: 11300092
-MD5sum: c17561cda942ffbe42d150f5d9e91237
-SHA1: a298216f8ca9a6edccdfbc0e2e50b45dd68660c2
-SHA256: 50268f28ba72cc87ff00ab971448f96d29c00c9e50c93fb2a75c1d4152b10c6b
+Maintainer: root <root@1ec3d8adb768>
+Installed-Size: 30265
+Filename: pool/6.18/linux-image-6.18.63-openframe_6.18.63-3_i386.deb
+Size: 11304256
+MD5sum: 25e7a48bf2c75cb2fb7c2de74b751bfa
+SHA1: 5ac6fed6f14380d4a74218e69bf58c35184f950e
+SHA256: 8c245fefb99f6ef1d8d691612db40f04659a90b912b3dbf38c2690996c12c3a7
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -42,25 +42,25 @@ Maintainer: OpenFrame Project <noreply@openbeak.net>
 Depends: linux-image-6.18.63-openframe
 Filename: pool/6.18/linux-image-openframe-6.18_6.18.63_i386.deb
 Size: 784
-MD5sum: 009dd4206adc1ca2daee687029196762
-SHA1: d0031fb95f76d180f4c493a8280c5ed456935840
-SHA256: 98cc6a010a35236106c07d25bd642c8c7c55d55b5abdef496aaf6d8e28080e83
+MD5sum: 6a7f7fa07a8c755844c6e53183cdb6d8
+SHA1: 07a2cc1e4004a96bfde87d0826b68ffddc5d9545
+SHA256: 94e6c751d7bd5b253b85784d63874a69c4a3104ef5a2205e14402790ab96c6da
 Description: OpenFrame kernel metapackage (6.18 series)
  Tracks the latest OpenFrame Linux 6.18 kernel.
  Install this package to receive kernel updates via apt upgrade.
 
 Package: linux-libc-dev
 Source: linux-upstream
-Version: 6.18.63-1
+Version: 6.18.63-3
 Architecture: i386
-Maintainer: root <root@63a67a97ff1d>
+Maintainer: root <root@1ec3d8adb768>
 Installed-Size: 7562
 Provides: linux-kernel-headers
-Filename: pool/6.18/linux-libc-dev_6.18.63-1_i386.deb
-Size: 1466776
-MD5sum: 809edf9b5d4e522810e4b9de7ef0fc25
-SHA1: 8adffd30240d249871af4aae603b7900bd66c114
-SHA256: f096e1776b612fdd067b9d69ec867b20701264d34077c516194a1f5b52cf1725
+Filename: pool/6.18/linux-libc-dev_6.18.63-3_i386.deb
+Size: 1466748
+MD5sum: afe4cddbb672d191ad3a440ccc33f841
+SHA1: a931431b53ec7c8e6e973a5d4af32702642e0d12
+SHA256: 0f0d1cea4a46532db547b9d899cd194b2abf1caa38c34c2793193ade71afd9e6
 Section: devel
 Priority: optional
 Multi-Arch: same
