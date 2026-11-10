@@ -32,7 +32,9 @@ You might get away with using these packages with earlier Debian or Ubuntu relea
 
 ## Patches
 
-The patches include a modified verison of Andrew de Quincey's OpenFrame backlight driver, a pin tweak which enables line output switching on the STAC9202 audio IC inside the OpenFrame 1, plus a twiddle to get the I2C bus to play nicely, which gets the ambient light sensor working.
+The patches include a modified verison of Andrew de Quincey's OpenFrame backlight driver, a pin tweak which enables line output switching on the STAC9202 audio IC inside the OpenFrame 1 (it only touches that codec, so the OpenFrame 2's IDT codec is left alone), a fix for HDA patch files whose codec IDs have the top bit set (accepted upstream), the Atom Z5xx's current microcode no longer being reported as old, and a couple of harmless boot messages silenced.
+
+The backlight patch relies on `acpi_backlight=vendor` on the kernel command line (as openframe-linux sets it) to stop the gma500 driver registering a backlight of its own, which this panel can't use.
 
 Apply to the kernel source like this:
 

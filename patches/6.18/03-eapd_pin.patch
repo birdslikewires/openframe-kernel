@@ -1,21 +1,26 @@
 --- a/sound/hda/codecs/generic.c
 +++ b/sound/hda/codecs/generic.c
-@@ -916,6 +916,7 @@ static void path_power_down_sync(struct
- /* turn on/off EAPD on the given pin */
+@@ -917,6 +917,10 @@
  static void set_pin_eapd(struct hda_codec *codec, hda_nid_t pin, bool enable)
  {
-+	pin = 0x07;  // OpenFrame Workaround
  	struct hda_gen_spec *spec = codec->spec;
++	/* OpenFrame 1: the STAC9202's external amplifier is switched by pin 0x07's EAPD,
++	 * whichever output is in use. */
++	if (codec->core.vendor_id == 0x83847632)
++		pin = 0x07;
  	if (spec->own_eapd_ctl ||
  	    !(snd_hda_query_pin_caps(codec, pin) & AC_PINCAP_EAPD))
+ 		return;
 --- a/sound/hda/codecs/sigmatel.c
 +++ b/sound/hda/codecs/sigmatel.c
-@@ -4520,7 +4520,7 @@ static int patch_stac925x(struct hda_cod
-
+@@ -4499,7 +4499,9 @@
+ 
  	spec = codec->spec;
  	spec->linear_tone_beep = 1;
 -	spec->gen.own_eapd_ctl = 1;
-+	//spec->gen.own_eapd_ctl = 1;  // OpenFrame Workaround
-
++	/* OpenFrame 1: let the generic parser drive the STAC9202's EAPD (see generic.c) */
++	if (codec->core.vendor_id != 0x83847632)
++		spec->gen.own_eapd_ctl = 1;
+ 
  	snd_hda_add_verbs(codec, stac925x_core_init);
-
+ 
