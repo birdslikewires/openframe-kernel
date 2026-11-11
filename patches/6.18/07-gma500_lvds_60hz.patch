@@ -1,0 +1,31 @@
+--- a/drivers/gpu/drm/gma500/psb_intel_lvds.c
++++ b/drivers/gpu/drm/gma500/psb_intel_lvds.c
+@@ -765,8 +765,26 @@
+ 		mode_dev->panel_fixed_mode =
+ 		    psb_intel_crtc_mode_get(dev, crtc);
+ 		if (mode_dev->panel_fixed_mode) {
+-			mode_dev->panel_fixed_mode->type |=
+-			    DRM_MODE_TYPE_PREFERRED;
++			struct drm_display_mode *m = mode_dev->panel_fixed_mode;
++			int refresh = drm_mode_vrefresh(m);
++
++			/*
++			 * OpenFrame: the clock read back from the PLL isn't the
++			 * panel's. The firmware programs 86 MHz (156 Hz) for the
++			 * OpenFrame 1's 800x480 panel, and the readback assumes a
++			 * 66 MHz spread-spectrum reference where this one is about
++			 * 100 MHz, so it comes to 57 MHz (103 Hz). The panel is
++			 * made for 60 Hz (33.264 MHz). An LVDS panel's refresh is
++			 * 60 Hz or close to it: far from that, use 60 Hz.
++			 */
++			if (m->htotal && m->vtotal && (refresh < 50 || refresh > 75)) {
++				int clock = DIV_ROUND_CLOSEST(m->htotal * m->vtotal * 60, 1000);
++
++				dev_info(dev->dev, "LVDS: pre-programmed mode is %d Hz (%d kHz); using 60 Hz (%d kHz)\n",
++					 refresh, m->clock, clock);
++				m->clock = clock;
++			}
++			m->type |= DRM_MODE_TYPE_PREFERRED;
+ 			DRM_DEBUG_KMS("Using pre-programmed mode\n");
+ 			goto out;	/* FIXME: check for quirks */
+ 		}
