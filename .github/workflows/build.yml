@@ -173,9 +173,16 @@ jobs:
           dpkg-deb --build --root-owner-group "${METADIR}" \
             "packages/${METAPKG}_${KERNEL_VERSION}_i386.deb"
 
+      # Every OpenFrame apt repository is signed with one key, APT_SIGNING_KEY_OPENFRAME
+      # (this repository's own APT_SIGNING_KEY until that is set: the same key). Anything
+      # else stops the build before it publishes.
       - name: Import GPG signing key
+        env:
+          KEY: ${{ secrets.APT_SIGNING_KEY_OPENFRAME || secrets.APT_SIGNING_KEY }}
         run: |
-          echo "${{ secrets.APT_SIGNING_KEY }}" | gpg --batch --import
+          echo "${KEY}" | gpg --batch --import
+          FPR=$(gpg --batch --with-colons --list-secret-keys | awk -F: '/^sec/ { s = 1; next } s && /^fpr/ { print $10; s = 0 }')
+          [ "${FPR}" = 179C4F02E55F4096D690F3BFED801B683FCE8553 ] || { echo "Signing key ${FPR} is not the OpenFrame apt key"; exit 1; }
 
       - name: Update apt repository
         run: |
