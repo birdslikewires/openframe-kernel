@@ -30,6 +30,14 @@ There's only enough space on the `/boot` partition to support two simultaneously
 You might get away with using these packages with earlier Debian or Ubuntu releases too, though we build within a Trixie container with that toolchain, so your mileage may vary.
 
 
+## The firmware hub module (fh)
+
+`fh/` is the driver for the OpenFrame's EFI flash chip, built into every kernel package as a
+module: `/dev/fh` reads the chip (and writes it when loaded with `writable=1`), `/dev/fhp` programs
+without erasing. NVRAM and the boot block are refused unless `unprotect=1` is given too. Its write
+guards are tested against a fake chip before each build. See [fh/README.md](fh/README.md); the
+firmware itself is [openframe-firmware](https://github.com/birdslikewires/openframe-firmware).
+
 ## Patches
 
 The patches include a modified verison of Andrew de Quincey's OpenFrame backlight driver, a pin tweak which enables line output switching on the STAC9202 audio IC inside the OpenFrame 1 (it only touches that codec, so the OpenFrame 2's IDT codec is left alone), a fix for HDA patch files whose codec IDs have the top bit set (accepted upstream), the Atom Z5xx's current microcode no longer being reported as old, the OpenFrame's LCD panel driven at 60 Hz instead of the 103 Hz the graphics driver worked out from the firmware's settings, and a couple of harmless boot messages silenced.
