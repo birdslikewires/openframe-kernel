@@ -137,7 +137,11 @@ jobs:
             LOCALVERSION=-openframe \
             olddefconfig
 
+      # DEBFULLNAME/DEBEMAIL name the packages' maintainer (otherwise the build container's root).
       - name: Build kernel packages
+        env:
+          DEBFULLNAME: OpenFrame Project
+          DEBEMAIL: noreply@openbeak.net
         run: |
           make -C "linux-${KERNEL_VERSION}" \
             ARCH=i386 \
@@ -147,10 +151,14 @@ jobs:
             -j$(nproc) \
             bindeb-pkg
 
+      # bindeb-pkg also makes linux-libc-dev (the kernel's userspace headers). It isn't
+      # published: in this repository it would outrank Debian's own, which glibc is built
+      # against and which gets Debian's security updates.
       - name: Collect packages
         run: |
           mkdir -p packages
           mv *.deb packages/
+          rm -v packages/linux-libc-dev_*.deb
           ls -lh packages/
 
       - name: Build metapackage
@@ -187,9 +195,8 @@ jobs:
           # remain available from the GitHub releases (sorted by version, as file
           # times all date from the checkout)
           ls "${POOL}/linux-image-"[0-9]*.deb 2>/dev/null | sort -rV | tail -n +2 | xargs -r rm -v
-          for pkg in linux-headers linux-libc-dev; do
-            ls "${POOL}/${pkg}"*.deb 2>/dev/null | sort -rV | tail -n +2 | xargs -r rm -v
-          done
+          ls "${POOL}/linux-headers"*.deb 2>/dev/null | sort -rV | tail -n +2 | xargs -r rm -v
+          rm -fv "${POOL}/linux-libc-dev"*.deb      # no longer published (see Collect packages)
 
           # Export public signing key for users (binary dearmored for signed-by)
           gpg --export > apt-repo/key.gpg
