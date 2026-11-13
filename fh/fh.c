@@ -16,6 +16,16 @@
  * boot block (blocks 14 and 15) is refused unless unprotect=1 is given too:
  * a bad write there leaves a board that won't start, and on an OpenFrame 2
  * the chip is soldered in. Both can only be set when the module is loaded.
+ *
+ * Two devices, the same rules:
+ *   /dev/fh   erases each 64 KB block that changes, then programs it.
+ *   /dev/fhp  never erases: it only programs bytes, which flash can do only
+ *             by clearing bits (1 to 0). A write is refused before anything
+ *             is touched if any byte would need a bit set (0 to 1); otherwise
+ *             only the bytes that differ are programmed, then verified. It is
+ *             for writing a file's header (and its State byte) after its body,
+ *             so that an interrupted update leaves erased flash (no file) or a
+ *             whole file, never part of one.
  */
 
 #include <linux/delay.h>
@@ -66,11 +76,12 @@ static struct {
 	int mfr_id;		/* Manufacturer identifier */
 	int dev_id;		/* Device type identifier */
 	void *buffer;		/* Buffer 1 block for writes */
+	void *snapshot;		/* The block as it was, for /dev/fhp */
 
 	int (*lock)(unsigned long baddr);
 	int (*unlock)(unsigned long baddr);
 	int (*erase)(unsigned long baddr);
-	int (*program)(unsigned long baddr, unsigned char *buffer);
+	int (*program)(unsigned long baddr, unsigned char *buffer, const unsigned char *was);
 } fh = {
 	.size	= 0x00100000,
 };
@@ -78,6 +89,7 @@ static struct {
 static int	fh_open(struct inode *inode, struct file *file);
 static int	fh_release(struct inode *inode, struct file *file);
 static ssize_t	fh_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos);
+static ssize_t	fhp_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos);
 static ssize_t	fh_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos);
 
 /* Allow seeking anywhere within the 1 MB device, so dd seek= and skip= work */
@@ -100,6 +112,30 @@ static struct miscdevice fh_dev = {
         .name           = "fh",
         .fops           = &fh_fops,
 };
+
+static struct file_operations fhp_fops = {
+	.owner		= THIS_MODULE,
+	.llseek		= fh_llseek,
+	.open		= fh_open,
+	.release	= fh_release,
+	.write		= fhp_write,
+	.read		= fh_read,
+};
+
+static struct miscdevice fhp_dev = {
+        .minor          = MISC_DYNAMIC_MINOR,
+        .name           = "fhp",
+        .fops           = &fhp_fops,
+};
+
+/*
+ * Whether program() leaves byte boffs alone: after an erase (was == NULL),
+ * bytes that are to be 0xff; without one (/dev/fhp), bytes already right.
+ */
+static inline int fh_skip(const unsigned char *buffer, const unsigned char *was, unsigned int boffs)
+{
+	return was ? buffer[boffs] == was[boffs] : buffer[boffs] == 0xff;
+}
 
 /*
  * Unlock a block in the firmware hub so that it can be programmed.
@@ -184,7 +220,7 @@ static int i82802_erase(unsigned long baddr)
 	return 0;
 }
 
-static int i82802_program(unsigned long baddr, unsigned char *buffer)
+static int i82802_program(unsigned long baddr, unsigned char *buffer, const unsigned char *was)
 {
 	volatile unsigned char *fwhub = (volatile unsigned char *)fh.vdata;
 	unsigned int status;
@@ -195,9 +231,10 @@ static int i82802_program(unsigned long baddr, unsigned char *buffer)
 		/*
 		 * Erasing a block in the flash sets all the bytes in
 		 * the block to the value 0xff, so we don't need to
-		 * program data bytes that have that value.
+		 * program data bytes that have that value (and without
+		 * an erase, bytes that already hold their value).
 		 */
-		if (buffer[boffs] == 0xff) {
+		if (fh_skip(buffer, was, boffs)) {
 			continue;
 		}
 		fwhub[0] = 0x50;		/* Clear status register */
@@ -267,7 +304,7 @@ static int sst4900_erase(unsigned long baddr)
 	return 0;
 }
 
-static int sst4900_program(unsigned long baddr, unsigned char *buffer)
+static int sst4900_program(unsigned long baddr, unsigned char *buffer, const unsigned char *was)
 {
 	volatile unsigned char *fwhub = (volatile unsigned char *)fh.vdata;
 	unsigned int boffs;
@@ -277,9 +314,10 @@ static int sst4900_program(unsigned long baddr, unsigned char *buffer)
 		/*
 		 * Erasing a block in the flash sets all the bytes in
 		 * the block to the value 0xff, so we don't need to
-		 * program data bytes that have that value.
+		 * program data bytes that have that value (and without
+		 * an erase, bytes that already hold their value).
 		 */
-		if (buffer[boffs] == 0xff) {
+		if (fh_skip(buffer, was, boffs)) {
 			continue;
 		}
 		fwhub[0x5555] = 0xAA;
@@ -324,8 +362,11 @@ static int fh_open(struct inode *inode, struct file *file)
 		ret = -EBUSY;
 		goto out;
 	}
-	if ((fh.buffer = kmalloc(FH_BLOCK_SIZE, GFP_KERNEL)) == NULL) {
+	if ((fh.buffer = kmalloc(FH_BLOCK_SIZE, GFP_KERNEL)) == NULL ||
+	    (fh.snapshot = kmalloc(FH_BLOCK_SIZE, GFP_KERNEL)) == NULL) {
 		printk("fh_open: kmalloc fails\n");
+		kfree(fh.buffer);
+		fh.buffer = NULL;
 		ret = -ENOMEM;
 		goto out;
 	}
@@ -345,6 +386,10 @@ static int fh_release(struct inode *inode, struct file *file)
 	if (fh.buffer != NULL) {
 		kfree(fh.buffer);
 		fh.buffer = NULL;
+	}
+	if (fh.snapshot != NULL) {
+		kfree(fh.snapshot);
+		fh.snapshot = NULL;
 	}
 	if (fh.users > 0) {
 		fh.users--;
@@ -435,7 +480,7 @@ static ssize_t fh_write(struct file *filp, const char __user *buf, size_t count,
 		if ((ret = fh.unlock(baddr)) < 0) goto out;
 		ret = fh.erase(baddr);
 		if (ret == 0)
-			ret = fh.program(baddr, fh.buffer);
+			ret = fh.program(baddr, fh.buffer, NULL);
 		if (ret < 0) {
 			fh.lock(baddr);	/* Best effort; report the first error */
 			goto out;
@@ -450,6 +495,107 @@ static ssize_t fh_write(struct file *filp, const char __user *buf, size_t count,
 			goto out;
 		}
 		printk("fh: block 0x%08lx verified\n", baddr);
+		*f_pos = baddr + FH_BLOCK_SIZE;
+	}
+	ret = count;
+
+  out:
+	up(&fh.sem);
+	return ret;
+}
+
+/*
+ * /dev/fhp: program without erasing. Whole blocks, as for /dev/fh; each block
+ * written is the whole block as it is to end up. Every block is checked before
+ * any is touched: the write is refused (nothing written) if a protected block
+ * would change without unprotect=1, or if any byte would need a bit to go from
+ * 0 to 1, which only an erase can do. Then only the bytes that differ are
+ * programmed, and each block is verified.
+ */
+static ssize_t fhp_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
+{
+	unsigned long foffs;
+	unsigned long baddr;
+	unsigned int boffs;
+	unsigned char *was, *want;
+	ssize_t ret;
+
+	if (*f_pos < 0 || *f_pos >= fh.size) {
+		return count ? -ENOSPC : 0;
+	}
+	foffs = (unsigned long)*f_pos;
+	if ((foffs & FH_BLOCK_MASK) || (count & FH_BLOCK_MASK) || count > fh.size - foffs) {
+		printk("fh: fhp write at 0x%08lx of 0x%zx bytes is not whole blocks within the chip\n", foffs, count);
+		return -EINVAL;
+	}
+	if (!writable) {
+		return -EPERM;
+	}
+	if (down_interruptible(&fh.sem)) {
+		return -ERESTARTSYS;
+	}
+	was = fh.snapshot;
+	want = fh.buffer;
+
+	for (baddr = foffs; baddr < (foffs + count); baddr += FH_BLOCK_SIZE) {
+		if (copy_from_user(want, buf + (baddr - foffs), FH_BLOCK_SIZE)) {
+			ret = -EFAULT;
+			goto out;
+		}
+		memcpy(was, (char *)fh.vdata + baddr, FH_BLOCK_SIZE);
+		if (!memcmp(was, want, FH_BLOCK_SIZE)) {
+			continue;
+		}
+		if (!unprotect && FH_PROTECTED(baddr)) {
+			printk("fh: block 0x%08lx is NVRAM or the boot block; nothing written (load with unprotect=1 to change it)\n", baddr);
+			ret = -EPERM;
+			goto out;
+		}
+		for (boffs = 0; boffs < FH_BLOCK_SIZE; boffs++) {
+			if ((was[boffs] & want[boffs]) != want[boffs]) {
+				printk("fh: fhp: 0x%08lx would need a bit set (0x%02x to 0x%02x), which needs an erase; nothing written\n",
+				       baddr + boffs, was[boffs], want[boffs]);
+				ret = -EINVAL;
+				goto out;
+			}
+		}
+	}
+
+	for (baddr = foffs; baddr < (foffs + count); baddr += FH_BLOCK_SIZE) {
+		if (copy_from_user(want, buf, FH_BLOCK_SIZE)) {
+			ret = -EFAULT;
+			goto out;
+		}
+		buf += FH_BLOCK_SIZE;
+		memcpy(was, (char *)fh.vdata + baddr, FH_BLOCK_SIZE);
+		if (!memcmp(was, want, FH_BLOCK_SIZE)) {
+			*f_pos = baddr + FH_BLOCK_SIZE;
+			continue;
+		}
+		/* Checked above, but the caller's buffer could have changed since */
+		if (!unprotect && FH_PROTECTED(baddr)) {
+			ret = -EPERM;
+			goto out;
+		}
+		for (boffs = 0; boffs < FH_BLOCK_SIZE; boffs++) {
+			if ((was[boffs] & want[boffs]) != want[boffs]) {
+				ret = -EINVAL;
+				goto out;
+			}
+		}
+		if ((ret = fh.unlock(baddr)) < 0) goto out;
+		ret = fh.program(baddr, want, was);
+		if (ret < 0) {
+			fh.lock(baddr);
+			goto out;
+		}
+		if ((ret = fh.lock(baddr)) < 0) goto out;
+		if (memcmp((char *)fh.vdata + baddr, want, FH_BLOCK_SIZE)) {
+			printk("fh: fhp: block 0x%08lx verify fails\n", baddr);
+			ret = -EIO;
+			goto out;
+		}
+		printk("fh: fhp: block 0x%08lx programmed without erase, verified\n", baddr);
 		*f_pos = baddr + FH_BLOCK_SIZE;
 	}
 	ret = count;
@@ -521,6 +667,12 @@ static int __init fh_init(void)
 		ret = -ENODEV;
 		goto fail;
 	}
+	if ((ret = misc_register(&fhp_dev)) < 0) {
+		printk("fh_init: misc_register fhp fails (%d)\n", ret);
+		misc_deregister(&fh_dev);
+		ret = -ENODEV;
+		goto fail;
+	}
 	return 0;
 
   fail:
@@ -543,6 +695,7 @@ static void __exit fh_exit(void)
 	if (fh.vlock != NULL) {
 		iounmap(fh.vlock);
 	}
+	misc_deregister(&fhp_dev);
 	misc_deregister(&fh_dev);
 }
 

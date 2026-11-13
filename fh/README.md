@@ -23,6 +23,13 @@ A refused write changes nothing. Both options can only be given when the module 
 
 Writes go in whole 64 KB blocks; a block that already matches is skipped.
 
+`/dev/fhp` takes the same writes but never erases. Flash can only be programmed by clearing bits
+(1 to 0), so a write is refused, with nothing written, if any byte would need a bit set; otherwise
+only the bytes that differ are programmed, then the block is verified. The same `writable` and
+`unprotect` rules apply. It exists so that an update can write a file's body with its header left
+blank and then the header last: if the update is interrupted, the flash holds either erased space
+(which the firmware reads as no file) or the whole file, never part of one.
+
 `test/test_guards.c` runs the write path in user space against a fake chip, to check those
 guards without writing a real one. From `fh/test`:
 
