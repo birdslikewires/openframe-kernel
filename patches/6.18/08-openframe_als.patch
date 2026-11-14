@@ -32,7 +32,7 @@
  obj-$(CONFIG_OPT4060)		+= opt4060.o
 --- /dev/null
 +++ b/drivers/iio/light/openframe-als.c
-@@ -0,0 +1,136 @@
+@@ -0,0 +1,152 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * OpenFrame ambient light sensor
@@ -41,8 +41,10 @@
 + * 0x34 on the SCH SMBus. One reading: an SMBus block write of command 0x27 with two
 + * zero bytes asks for it, then a block read of command 0x27 returns 0x87 followed by
 + * the reading, low byte first (worked out from OpenPeak's readlightsensor). The device
-+ * answers on the first read, about 2 ms a reading. Nothing else is ever sent to it:
-+ * what else it does isn't known. The reading has no known unit, so it's published raw.
++ * answers on the first read, about 2 ms a reading. Now and then a first reading comes
++ * back 0 and the next one is right, so a 0 is asked for again (twice at most: in the
++ * dark it may really be 0). Nothing else is ever sent to the device: what else it does
++ * isn't known. The reading has no known unit, so it's published raw.
 + *
 + * Nothing describes the device to the kernel, so userspace creates it (openframe-scripts
 + * does, from a udev rule):
@@ -60,19 +62,18 @@
 +#define OFALS_CMD	0x27
 +#define OFALS_READY	0x87
 +#define OFALS_POLLS	20
++#define OFALS_TRIES	3	/* requests for one reading while it comes back 0 */
 +
 +struct ofals {
 +	struct i2c_client *client;
 +	struct mutex lock;	/* one request and its reply at a time */
 +};
 +
-+static int ofals_read(struct ofals *als, int *val)
++static int ofals_request(struct ofals *als, int *val)
 +{
 +	static const u8 req[2] = { 0, 0 };
 +	u8 buf[I2C_SMBUS_BLOCK_MAX];
 +	int ret, i;
-+
-+	guard(mutex)(&als->lock);
 +
 +	ret = i2c_smbus_write_block_data(als->client, OFALS_CMD, sizeof(req), req);
 +	if (ret < 0)
@@ -90,6 +91,21 @@
 +	}
 +
 +	return -ETIMEDOUT;
++}
++
++static int ofals_read(struct ofals *als, int *val)
++{
++	int ret, i;
++
++	guard(mutex)(&als->lock);
++
++	for (i = 0; i < OFALS_TRIES; i++) {
++		ret = ofals_request(als, val);
++		if (ret || *val)
++			break;
++	}
++
++	return ret;
 +}
 +
 +static int ofals_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec const *chan,
