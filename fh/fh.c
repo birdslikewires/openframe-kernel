@@ -380,9 +380,13 @@ static int fh_open(struct inode *inode, struct file *file)
 
 static int fh_release(struct inode *inode, struct file *file)
 {
-	if (down_interruptible(&fh.sem)) {
-		return -ERESTARTSYS;
-	}
+	/*
+	 * Not down_interruptible(): the VFS ignores what release returns, so giving up on a
+	 * signal (a killed updater, with someone else in fh_open) would leave fh.users at 1
+	 * and the buffers allocated, and every later open would get -EBUSY until the module
+	 * was reloaded. The semaphore is only ever held briefly.
+	 */
+	down(&fh.sem);
 	if (fh.buffer != NULL) {
 		kfree(fh.buffer);
 		fh.buffer = NULL;

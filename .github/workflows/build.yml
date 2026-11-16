@@ -137,6 +137,15 @@ jobs:
             LOCALVERSION=-openframe \
             olddefconfig
 
+      # The OpenFrame's own drivers must be in the configuration: a patch applied with fuzz in
+      # the wrong place, or a Kconfig entry gone missing (olddefconfig silently drops its
+      # symbol), would otherwise ship a kernel without the backlight, light sensor or /dev/fh.
+      - name: Check the OpenFrame drivers are configured
+        run: |
+          for c in CONFIG_BACKLIGHT_OPENFRAME=y CONFIG_OPENFRAME_ALS=m CONFIG_OPENFRAME_FH=m; do
+            grep -qx "${c}" "linux-${KERNEL_VERSION}/.config" || { echo "${c} isn't in the configuration."; exit 1; }
+          done
+
       # DEBFULLNAME/DEBEMAIL name the packages' maintainer (otherwise the build container's root).
       - name: Build kernel packages
         env:
@@ -160,6 +169,16 @@ jobs:
           mv *.deb packages/
           rm -v packages/linux-libc-dev_*.deb
           ls -lh packages/
+
+      # And their modules must be in the package that ships (the backlight is built in).
+      - name: Check the OpenFrame modules are packaged
+        run: |
+          IMG=$(ls packages/linux-image-*-openframe_*.deb | grep -v -- '-dbg_' | head -1)
+          # Listed once: grep -q stopping early would fail dpkg-deb's pipe under pipefail.
+          LIST=$(dpkg-deb -c "${IMG}")
+          for m in fh.ko openframe-als.ko; do
+            grep -q "/${m}\(\.[a-z]*\)\?\$" <<< "${LIST}" || { echo "${m} isn't in ${IMG}."; exit 1; }
+          done
 
       - name: Build metapackage
         run: |

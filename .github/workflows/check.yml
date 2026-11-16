@@ -28,23 +28,33 @@ jobs:
         run: |
           KBRANCH="6.18"
 
-          LATEST=$(curl -s https://www.kernel.org/releases.json | \
+          LATEST=$(curl -fsS https://www.kernel.org/releases.json | \
             jq -r --arg branch "${KBRANCH}." \
             '[.releases[] | select(.version | startswith($branch))] | first | .version')
+          # Only a plain version goes on (into tags, packages and other jobs' shell steps).
+          if ! [[ "${LATEST}" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            echo "Couldn't get the latest ${KBRANCH} version from kernel.org (got '${LATEST}')."
+            exit 1
+          fi
 
-          LAST_TAG=$(gh release list \
-            --repo ${{ github.repository }} \
-            --limit 1 \
-            --json tagName \
-            -q '.[0].tagName // ""' 2>/dev/null || echo "")
-          LAST_BUILT="${LAST_TAG#v}"
+          # Built already if there's a release for it: asked by its tag, not by which release
+          # is newest (an older version built by hand would otherwise make every check rebuild
+          # the latest). A question GitHub doesn't answer stops here, rather than rebuilding.
+          if OUT=$(gh release view "v${LATEST}" --repo "${GITHUB_REPOSITORY}" --json tagName 2>&1); then
+            BUILT=yes
+          elif grep -qi "not found" <<< "${OUT}"; then
+            BUILT=no
+          else
+            echo "Couldn't ask GitHub whether v${LATEST} is built: ${OUT}"
+            exit 1
+          fi
 
           echo "Latest upstream: ${LATEST}"
-          echo "Last built: ${LAST_BUILT}"
+          echo "Built already: ${BUILT}"
 
           echo "kernel_version=${LATEST}" >> $GITHUB_OUTPUT
 
-          if [ "${LATEST}" != "${LAST_BUILT}" ]; then
+          if [ "${BUILT}" = no ]; then
             echo "should_build=true" >> $GITHUB_OUTPUT
           else
             echo "should_build=false" >> $GITHUB_OUTPUT

@@ -38,6 +38,7 @@ struct file_operations {
 struct miscdevice { int minor; const char *name; const struct file_operations *fops; };
 static inline void sema_init(struct semaphore *s, int n) { s->n = n; }
 static inline int down_interruptible(struct semaphore *s) { s->n--; return 0; }
+static inline void down(struct semaphore *s) { s->n--; }
 static inline void up(struct semaphore *s) { s->n++; }
 static inline void *kmalloc(size_t n, int f) { return malloc(n); }
 static inline void kfree(void *p) { free(p); }
