@@ -1,0 +1,40 @@
+--- a/drivers/gpu/drm/gma500/psb_intel_display.c
++++ b/drivers/gpu/drm/gma500/psb_intel_display.c
+@@ -70,7 +70,8 @@
+ 	clock->m = 5 * (clock->m1 + 2) + (clock->m2 + 2);
+ 	clock->p = clock->p1 * clock->p2;
+ 	clock->vco = refclk * clock->m / (clock->n + 2);
+-	clock->dot = clock->vco / clock->p;
++	/* A divider read back as 0 would divide by zero: no clock then. */
++	clock->dot = clock->p ? clock->vco / clock->p : 0;
+ }
+ 
+ /*
+@@ -338,9 +339,15 @@
+ 	clock.n = (fp & FP_N_DIV_MASK) >> FP_N_DIV_SHIFT;
+ 
+ 	if (is_lvds) {
++		/*
++		 * OpenFrame: P1 is one bit of the whole 8-bit field, as this
++		 * driver programs it ((1 << (p1 - 1)) << 16), not the i830's
++		 * 6 bits. The OpenFrame 2's Samsung-panel firmware leaves
++		 * P1 = 7 (bit 22), which the narrower mask read as 0.
++		 */
+ 		clock.p1 =
+ 		    ffs((dpll &
+-			 DPLL_FPA01_P1_POST_DIV_MASK_I830_LVDS) >>
++			 DPLL_FPA0h1_P1_POST_DIV_MASK) >>
+ 			DPLL_FPA01_P1_POST_DIV_SHIFT);
+ 		clock.p2 = 14;
+ 
+@@ -367,6 +374,10 @@
+ 		psb_intel_clock(48000, &clock);
+ 	}
+ 
++	if (!clock.dot)
++		dev_warn_once(dev->dev, "LVDS: PLL reads back no clock (dpll 0x%08x, fp 0x%08x)\n",
++			      dpll, fp);
++
+ 	/* XXX: It would be nice to validate the clocks, but we can't reuse
+ 	 * i830PllIsValid() because it relies on the xf86_config connector
+ 	 * configuration being accurate, which it isn't necessarily.
