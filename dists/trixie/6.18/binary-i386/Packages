@@ -1,14 +1,14 @@
 Package: linux-headers-6.18.63-openframe
 Source: linux-upstream
-Version: 6.18.63-9
+Version: 6.18.63-10
 Architecture: i386
 Maintainer: OpenFrame Project <noreply@openbeak.net>
-Installed-Size: 53811
-Filename: pool/6.18/linux-headers-6.18.63-openframe_6.18.63-9_i386.deb
-Size: 9155184
-MD5sum: 5507a168a95b020f605fb6fe6ccfdec0
-SHA1: dcc4ae1e5fd630c9caf5264467a247dcd9470ecb
-SHA256: af8be9fbc7d0167d79dc35c81a79003a40ccc46ec35383c36461c40f8534572c
+Installed-Size: 53813
+Filename: pool/6.18/linux-headers-6.18.63-openframe_6.18.63-10_i386.deb
+Size: 9154656
+MD5sum: 2b8bfffceb763cf014ebb45d8c0894ff
+SHA1: d5bead0091d322220d623867cf05149c4b92c21d
+SHA256: 124d03bd20896cf4248575d51cc89d74ebfe488c7e77a570be37a703ef4e9b04
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -19,15 +19,15 @@ Description: Linux kernel headers for 6.18.63-openframe on i386
 
 Package: linux-image-6.18.63-openframe
 Source: linux-upstream
-Version: 6.18.63-9
+Version: 6.18.63-10
 Architecture: i386
 Maintainer: OpenFrame Project <noreply@openbeak.net>
-Installed-Size: 17564
-Filename: pool/6.18/linux-image-6.18.63-openframe_6.18.63-9_i386.deb
-Size: 13875656
-MD5sum: 1dee0244f3131402f7bf6b36bed74c18
-SHA1: 6680f71e6ee2bc94d3781b8a0c76c64ce6dcb03f
-SHA256: 4377833b5de6456c06a9e442e67763a0b6579318497ada2571e205ff91c60b4d
+Installed-Size: 17681
+Filename: pool/6.18/linux-image-6.18.63-openframe_6.18.63-10_i386.deb
+Size: 13987828
+MD5sum: b57e939529958970091a7bcab99b06be
+SHA1: d16f975eca8d1044b5fc5fcaaf70c4d1a4972c69
+SHA256: 4b6399aff5a1d5ca388fbc408bb85eade3e3ee00ae111482256c69e91dede46d
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -42,9 +42,9 @@ Maintainer: OpenFrame Project <noreply@openbeak.net>
 Depends: linux-image-6.18.63-openframe
 Filename: pool/6.18/linux-image-openframe-6.18_6.18.63_i386.deb
 Size: 784
-MD5sum: 0bb58be0f8b8193f4c9faf6dfe518478
-SHA1: afca48f891bfbab2061c43caa959e1b5464a64bc
-SHA256: 5eebcab8fa726a3a9cbb079227ea589c56e7a66e5a27ad9fa23746dbb5943f5a
+MD5sum: fbf12c93791265a2b9906d3fc049fdd0
+SHA1: e4919739323208b499d6c587035662e54fa07011
+SHA256: a2e8fd067fc98bb6d7138d73856b3b5c37d804bc17fd44a118079c5d5eb66493
 Description: OpenFrame kernel metapackage (6.18 series)
  Tracks the latest OpenFrame Linux 6.18 kernel.
  Install this package to receive kernel updates via apt upgrade.
