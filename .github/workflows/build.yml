@@ -11,6 +11,10 @@ on:
         required: false
         type: string
         default: ''
+      publish:
+        required: false
+        type: boolean
+        default: true
   workflow_dispatch:
     inputs:
       kernel_version:
@@ -19,6 +23,16 @@ on:
         type: string
       package_revision:
         description: 'Package revision (e.g. 3 for 6.18.63-3); empty for one above the last in the apt repository'
+        required: false
+        type: string
+        default: ''
+      publish:
+        description: 'Publish (apt repository, GitHub release, image build); off for a test kernel, kept only as this run''s artifact'
+        required: false
+        type: boolean
+        default: true
+      config_set:
+        description: 'Test kernels only (publish off): config symbols to set on top of configs/, e.g. "B43_BUSES_BCMA_AND_SSB=y B43_BUSES_SSB=n"'
         required: false
         type: string
         default: ''
@@ -127,21 +141,50 @@ jobs:
           printf '\nconfig OPENFRAME_FH\n\ttristate "OpenFrame firmware hub (EFI flash) access"\n\tdepends on X86_32\n\thelp\n\t  /dev/fh reads the OpenFrame firmware hub chip and /dev/fhp programs it\n\t  without erasing; writing needs the module loaded with writable=1.\n' >> "${D}/Kconfig"
           echo 'obj-$(CONFIG_OPENFRAME_FH) += fh.o' >> "${D}/Makefile"
 
+      # A test kernel may set symbols on top of the committed configuration (config_set), so a
+      # trial never has to change what every published kernel is built with. Each must survive
+      # olddefconfig as asked, or the build stops.
       - name: Configure kernel
+        env:
+          CONFIG_SET: ${{ inputs.config_set }}
+          PUBLISH: ${{ inputs.publish }}
         run: |
           KBRANCH=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
-          cp "configs/${KBRANCH}-openframe.config" "linux-${KERNEL_VERSION}/.config"
-          make -C "linux-${KERNEL_VERSION}" \
+          K="linux-${KERNEL_VERSION}"
+          cp "configs/${KBRANCH}-openframe.config" "${K}/.config"
+          if [ -n "${CONFIG_SET}" ]; then
+            [ "${PUBLISH}" = false ] || { echo "config_set is for test kernels only: turn publish off."; exit 1; }
+            for kv in ${CONFIG_SET}; do
+              k=${kv%%=*}; v=${kv#*=}
+              case "${k}" in ''|*[!A-Z0-9_]*) echo "config_set: bad symbol in '${kv}'"; exit 1 ;; esac
+              case "${v}" in
+                y) "${K}/scripts/config" --file "${K}/.config" --enable "${k}" ;;
+                m) "${K}/scripts/config" --file "${K}/.config" --module "${k}" ;;
+                n) "${K}/scripts/config" --file "${K}/.config" --disable "${k}" ;;
+                *) echo "config_set: '${kv}' must be =y, =m or =n"; exit 1 ;;
+              esac
+            done
+          fi
+          make -C "${K}" \
             ARCH=i386 \
             CROSS_COMPILE=i686-linux-gnu- \
             LOCALVERSION=-openframe \
             olddefconfig
+          for kv in ${CONFIG_SET}; do
+            k=${kv%%=*}; v=${kv#*=}
+            if [ "${v}" = n ]; then
+              ! grep -q "^CONFIG_${k}=" "${K}/.config" || { echo "config_set: ${k} still set after olddefconfig"; exit 1; }
+            else
+              grep -qx "CONFIG_${k}=${v}" "${K}/.config" || { echo "config_set: CONFIG_${k}=${v} didn't survive olddefconfig"; exit 1; }
+            fi
+            echo "config_set: ${kv}"
+          done
 
-      # (brcmsmac too: the OpenFrame 2's BCM43225 Wi-Fi card, which b43 is kept off by building it
-      # for SSB cards only.)
       # The OpenFrame's own drivers must be in the configuration: a patch applied with fuzz in
       # the wrong place, or a Kconfig entry gone missing (olddefconfig silently drops its
       # symbol), would otherwise ship a kernel without the backlight, light sensor or /dev/fh.
+      # (brcmsmac too: the OpenFrame 2's BCM43225 Wi-Fi card, which b43 is kept off by building it
+      # for SSB cards only.)
       - name: Check the OpenFrame drivers are configured
         run: |
           for c in CONFIG_BACKLIGHT_OPENFRAME=y CONFIG_OPENFRAME_ALS=m CONFIG_OPENFRAME_FH=m CONFIG_BRCMSMAC=m; do
@@ -194,10 +237,21 @@ jobs:
           dpkg-deb --build --root-owner-group "${METADIR}" \
             "packages/${METAPKG}_${KERNEL_VERSION}_i386.deb"
 
+      # A test kernel (publish off): its packages are only this run's artifact, for trying on a
+      # unit by hand (gh run download), so no unit gets it from apt.
+      - name: Keep the packages as an artifact (test kernel)
+        if: ${{ !inputs.publish }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: kernel-${{ inputs.kernel_version }}-test
+          path: packages/*.deb
+          retention-days: 14
+
       # Every OpenFrame apt repository is signed with one key, APT_SIGNING_KEY_OPENFRAME
       # (this repository's own APT_SIGNING_KEY until that is set: the same key). Anything
       # else stops the build before it publishes.
       - name: Import GPG signing key
+        if: ${{ inputs.publish }}
         env:
           KEY: ${{ secrets.APT_SIGNING_KEY_OPENFRAME || secrets.APT_SIGNING_KEY }}
         run: |
@@ -206,6 +260,7 @@ jobs:
           [ "${FPR}" = 179C4F02E55F4096D690F3BFED801B683FCE8553 ] || { echo "Signing key ${FPR} is not the OpenFrame apt key"; exit 1; }
 
       - name: Update apt repository
+        if: ${{ inputs.publish }}
         run: |
           KCOMPONENT=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
           POOL="apt-repo/pool/${KCOMPONENT}"
@@ -259,6 +314,7 @@ jobs:
             --detach-sign --armor -o dists/trixie/Release.gpg dists/trixie/Release
 
       - name: Generate directory listing
+        if: ${{ inputs.publish }}
         run: |
           cd apt-repo
           {
@@ -298,6 +354,7 @@ jobs:
           } > index.html
 
       - name: Push apt repository
+        if: ${{ inputs.publish }}
         run: |
           cd apt-repo
           git config user.name "github-actions[bot]"
@@ -308,6 +365,7 @@ jobs:
           git push origin repo
 
       - name: Create or update GitHub release
+        if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -328,6 +386,7 @@ jobs:
           fi
 
       - name: Delete old GitHub releases and tags
+        if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -337,6 +396,7 @@ jobs:
           done
 
       - name: Dispatch image build in openframe-linux
+        if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
         run: |
