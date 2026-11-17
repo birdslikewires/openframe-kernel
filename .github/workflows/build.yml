@@ -137,12 +137,14 @@ jobs:
             LOCALVERSION=-openframe \
             olddefconfig
 
+      # (brcmsmac too: the OpenFrame 2's BCM43225 Wi-Fi card, which b43 is kept off by building it
+      # for SSB cards only.)
       # The OpenFrame's own drivers must be in the configuration: a patch applied with fuzz in
       # the wrong place, or a Kconfig entry gone missing (olddefconfig silently drops its
       # symbol), would otherwise ship a kernel without the backlight, light sensor or /dev/fh.
       - name: Check the OpenFrame drivers are configured
         run: |
-          for c in CONFIG_BACKLIGHT_OPENFRAME=y CONFIG_OPENFRAME_ALS=m CONFIG_OPENFRAME_FH=m; do
+          for c in CONFIG_BACKLIGHT_OPENFRAME=y CONFIG_OPENFRAME_ALS=m CONFIG_OPENFRAME_FH=m CONFIG_BRCMSMAC=m; do
             grep -qx "${c}" "linux-${KERNEL_VERSION}/.config" || { echo "${c} isn't in the configuration."; exit 1; }
           done
 
@@ -176,7 +178,7 @@ jobs:
           IMG=$(ls packages/linux-image-*-openframe_*.deb | grep -v -- '-dbg_' | head -1)
           # Listed once, into a file (this job's container runs steps with sh, which has no <<<).
           dpkg-deb -c "${IMG}" > /tmp/image-contents.txt
-          for m in fh.ko openframe-als.ko; do
+          for m in fh.ko openframe-als.ko brcmsmac.ko; do
             grep -q "/${m}\(\.[a-z]*\)\?\$" /tmp/image-contents.txt || { echo "${m} isn't in ${IMG}."; exit 1; }
           done
 
