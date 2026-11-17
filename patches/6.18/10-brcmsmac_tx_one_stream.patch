@@ -1,0 +1,42 @@
+--- a/drivers/net/wireless/broadcom/brcm80211/brcmsmac/mac80211_if.c
++++ b/drivers/net/wireless/broadcom/brcm80211/brcmsmac/mac80211_if.c
+@@ -102,6 +102,17 @@
+ };
+ MODULE_DEVICE_TABLE(bcma, brcms_coreid_table);
+ 
++/*
++ * OpenFrame: how many spatial streams to send with. The OpenFrame 2's
++ * BCM43225 receives two streams cleanly, but most of its two-stream
++ * transmissions (MCS 8-15) fail, rate control keeps trying them, and the
++ * link stalls or drops; sending on one stream (MCS 0-7) works. Receiving
++ * stays two streams. 2 is the driver's own behaviour.
++ */
++static uint brcms_tx_streams = 1;
++module_param_named(tx_streams, brcms_tx_streams, uint, 0444);
++MODULE_PARM_DESC(tx_streams, "Spatial streams to send with on N-PHY cards (1 or 2, default 1)");
++
+ #if defined(CONFIG_BRCMDBG)
+ /*
+  * Module parameter for setting the debug message level. Available
+@@ -1065,6 +1076,12 @@
+ 			/* Single stream */
+ 			band->ht_cap.mcs.rx_mask[1] = 0;
+ 			band->ht_cap.mcs.rx_highest = cpu_to_le16(72);
++		} else if (brcms_tx_streams == 1) {
++			/*
++			 * Send on one stream, receive on two: mac80211 then
++			 * leaves MCS 8-15 out of the rates it sends with.
++			 */
++			band->ht_cap.mcs.tx_params |= IEEE80211_HT_MCS_TX_RX_DIFF;
+ 		}
+ 		hw->wiphy->bands[NL80211_BAND_2GHZ] = band;
+ 	} else {
+@@ -1076,6 +1093,8 @@
+ 		if (phy_type == PHY_TYPE_N || phy_type == PHY_TYPE_LCN) {
+ 			band = &wlc->bandstate[BAND_5G_INDEX]->band;
+ 			*band = brcms_band_5GHz_nphy_template;
++			if (phy_type == PHY_TYPE_N && brcms_tx_streams == 1)
++				band->ht_cap.mcs.tx_params |= IEEE80211_HT_MCS_TX_RX_DIFF;
+ 			hw->wiphy->bands[NL80211_BAND_5GHZ] = band;
+ 		} else {
+ 			return -EPERM;
