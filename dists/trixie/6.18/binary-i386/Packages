@@ -1,50 +1,50 @@
-Package: linux-headers-6.18.63-openframe
+Package: linux-headers-6.18.64-openframe
 Source: linux-upstream
-Version: 6.18.63-10
+Version: 6.18.64-1
 Architecture: i386
 Maintainer: OpenFrame Project <noreply@openbeak.net>
-Installed-Size: 53813
-Filename: pool/6.18/linux-headers-6.18.63-openframe_6.18.63-10_i386.deb
-Size: 9154656
-MD5sum: 2b8bfffceb763cf014ebb45d8c0894ff
-SHA1: d5bead0091d322220d623867cf05149c4b92c21d
-SHA256: 124d03bd20896cf4248575d51cc89d74ebfe488c7e77a570be37a703ef4e9b04
+Installed-Size: 53833
+Filename: pool/6.18/linux-headers-6.18.64-openframe_6.18.64-1_i386.deb
+Size: 9157428
+MD5sum: 5f62bd36ac59dc4783686e43631d9614
+SHA1: ae5838cdbe527afddbbacd4552ebafb321231afb
+SHA256: 07ccfda76e5ec79b5baa7f238823990a55451749449d868f3402dda68ef02477
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
-Description: Linux kernel headers for 6.18.63-openframe on i386
- This package provides kernel header files for 6.18.63-openframe on i386
+Description: Linux kernel headers for 6.18.64-openframe on i386
+ This package provides kernel header files for 6.18.64-openframe on i386
  .
  This is useful for people who need to build external modules
 
-Package: linux-image-6.18.63-openframe
+Package: linux-image-6.18.64-openframe
 Source: linux-upstream
-Version: 6.18.63-10
+Version: 6.18.64-1
 Architecture: i386
 Maintainer: OpenFrame Project <noreply@openbeak.net>
-Installed-Size: 17681
-Filename: pool/6.18/linux-image-6.18.63-openframe_6.18.63-10_i386.deb
-Size: 13987828
-MD5sum: b57e939529958970091a7bcab99b06be
-SHA1: d16f975eca8d1044b5fc5fcaaf70c4d1a4972c69
-SHA256: 4b6399aff5a1d5ca388fbc408bb85eade3e3ee00ae111482256c69e91dede46d
+Installed-Size: 17683
+Filename: pool/6.18/linux-image-6.18.64-openframe_6.18.64-1_i386.deb
+Size: 13991048
+MD5sum: 0cc9323db506f647a012e687a5055d93
+SHA1: bcca478783f936fa8206dd6b0f95e861b01bb85a
+SHA256: 97d3b0a94f257cfd04888eec1bdd8801e94ef5e475e644e3b6eac4667975d9c2
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
-Description: Linux kernel, version 6.18.63-openframe
+Description: Linux kernel, version 6.18.64-openframe
  This package contains the Linux kernel, modules and corresponding other
- files, version: 6.18.63-openframe.
+ files, version: 6.18.64-openframe.
 
 Package: linux-image-openframe-6.18
-Version: 6.18.63
+Version: 6.18.64
 Architecture: i386
 Maintainer: OpenFrame Project <noreply@openbeak.net>
-Depends: linux-image-6.18.63-openframe
-Filename: pool/6.18/linux-image-openframe-6.18_6.18.63_i386.deb
+Depends: linux-image-6.18.64-openframe
+Filename: pool/6.18/linux-image-openframe-6.18_6.18.64_i386.deb
 Size: 784
-MD5sum: fbf12c93791265a2b9906d3fc049fdd0
-SHA1: e4919739323208b499d6c587035662e54fa07011
-SHA256: a2e8fd067fc98bb6d7138d73856b3b5c37d804bc17fd44a118079c5d5eb66493
+MD5sum: 107b762c463e744abca4d1c6230c0009
+SHA1: 1c58c90444a849d0391d07b6c71873ebb8d8668a
+SHA256: cf527c2b3cf4a95869471afb0fc2940328368b70fa00f889f38a0184f43e8fea
 Description: OpenFrame kernel metapackage (6.18 series)
  Tracks the latest OpenFrame Linux 6.18 kernel.
  Install this package to receive kernel updates via apt upgrade.
