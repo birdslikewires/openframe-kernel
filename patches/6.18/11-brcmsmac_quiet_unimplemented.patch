@@ -1,0 +1,53 @@
+--- a/drivers/net/wireless/broadcom/brcm80211/brcmsmac/mac80211_if.c
++++ b/drivers/net/wireless/broadcom/brcm80211/brcmsmac/mac80211_if.c
+@@ -556,7 +556,7 @@
+ 			       str_true_false(conf->flags &
+ 					      IEEE80211_CONF_MONITOR));
+ 	if (changed & IEEE80211_CONF_CHANGE_PS)
+-		brcms_err(core, "%s: change power-save mode: %s (implement)\n",
++		brcms_dbg_mac80211(core, "%s: change power-save mode: %s (implement)\n",
+ 			  __func__,
+ 			  str_true_false(conf->flags & IEEE80211_CONF_PS));
+ 
+@@ -604,7 +604,7 @@
+ 		/* association status changed (associated/disassociated)
+ 		 * also implies a change in the AID.
+ 		 */
+-		brcms_err(core, "%s: %s: %sassociated\n", KBUILD_MODNAME,
++		brcms_dbg_mac80211(core, "%s: %s: %sassociated\n", KBUILD_MODNAME,
+ 			  __func__, vif->cfg.assoc ? "" : "dis");
+ 		spin_lock_bh(&wl->lock);
+ 		brcms_c_associate_upd(wl->wlc, vif->cfg.assoc);
+@@ -720,20 +720,20 @@
+ 
+ 	if (changed & BSS_CHANGED_CQM) {
+ 		/* Connection quality monitor config changed */
+-		brcms_err(core, "%s: cqm change: threshold %d, hys %d "
++		brcms_dbg_mac80211(core, "%s: cqm change: threshold %d, hys %d "
+ 			  " (implement)\n", __func__, info->cqm_rssi_thold,
+ 			  info->cqm_rssi_hyst);
+ 	}
+ 
+ 	if (changed & BSS_CHANGED_IBSS) {
+ 		/* IBSS join status changed */
+-		brcms_err(core, "%s: IBSS joined: %s (implement)\n",
++		brcms_dbg_mac80211(core, "%s: IBSS joined: %s (implement)\n",
+ 			  __func__, str_true_false(vif->cfg.ibss_joined));
+ 	}
+ 
+ 	if (changed & BSS_CHANGED_ARP_FILTER) {
+ 		/* Hardware ARP filter address list or state changed */
+-		brcms_err(core, "%s: arp filtering: %d addresses"
++		brcms_dbg_mac80211(core, "%s: arp filtering: %d addresses"
+ 			  " (implement)\n", __func__, vif->cfg.arp_addr_cnt);
+ 	}
+ 
+@@ -742,7 +742,7 @@
+ 		 * QoS for this association was enabled/disabled.
+ 		 * Note that it is only ever disabled for station mode.
+ 		 */
+-		brcms_err(core, "%s: qos enabled: %s (implement)\n",
++		brcms_dbg_mac80211(core, "%s: qos enabled: %s (implement)\n",
+ 			  __func__, str_true_false(info->qos));
+ 	}
+ 	return;
