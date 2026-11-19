@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0
+config CRYSTALHD
+	tristate "Broadcom Crystal HD video decoder (BCM70012, BCM70015)"
+	depends on PCI && DMA_SHARED_BUFFER
+	help
+	  The Broadcom Crystal HD H.264, VC-1 and MPEG-2 decoders, on mini PCIe
+	  cards such as the AzureWave AW-VD920. Userspace drives the card through
+	  /dev/crystalhd with libcrystalhd, which loads the decoder's firmware.
+
+	  To compile this driver as a module, choose M here: the module will be
+	  called crystalhd.

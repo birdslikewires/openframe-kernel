@@ -38,6 +38,14 @@ without erasing. NVRAM and the boot block are refused unless `unprotect=1` is gi
 guards are tested against a fake chip before each build. See [fh/README.md](fh/README.md); the
 firmware itself is [openframe-firmware](https://github.com/birdslikewires/openframe-firmware).
 
+## The Crystal HD driver (crystalhd)
+
+`crystalhd/` is the driver for Broadcom's Crystal HD video decoder cards, which an OpenFrame 2 can take
+in its mini PCIe slot. It's built into every kernel package as a staging module and loads by itself
+when the card is fitted. The library, firmware and player it works with are in the
+`openframe-crystalhd` package from [openframe-linux](https://github.com/birdslikewires/openframe-linux).
+See [crystalhd/README.md](crystalhd/README.md) for where it comes from and what we changed.
+
 ## Patches
 
 The patches include a modified verison of Andrew de Quincey's OpenFrame backlight driver, a pin tweak which enables line output switching on the STAC9202 audio IC inside the OpenFrame 1 (it only touches that codec, so the OpenFrame 2's IDT codec is left alone), a fix for HDA patch files whose codec IDs have the top bit set (accepted upstream), the Atom Z5xx's current microcode no longer being reported as old, the OpenFrame's LCD panel driven at 60 Hz instead of the 103 Hz the graphics driver worked out from the firmware's settings, a couple of harmless boot messages silenced, and a driver for the OpenFrame 1's light sensor (`openframe-als`), which publishes its reading as `in_illuminance_raw` under `/sys/bus/iio/devices/`. Nothing describes the sensor to the kernel, so userspace creates it (openframe-scripts does, on an OpenFrame 1): `echo openframe-als 0x34 > /sys/bus/i2c/devices/i2c-0/new_device`.

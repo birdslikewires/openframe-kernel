@@ -141,6 +141,17 @@ jobs:
           printf '\nconfig OPENFRAME_FH\n\ttristate "OpenFrame firmware hub (EFI flash) access"\n\tdepends on X86_32\n\thelp\n\t  /dev/fh reads the OpenFrame firmware hub chip and /dev/fhp programs it\n\t  without erasing; writing needs the module loaded with writable=1.\n' >> "${D}/Kconfig"
           echo 'obj-$(CONFIG_OPENFRAME_FH) += fh.o' >> "${D}/Makefile"
 
+      # The Broadcom Crystal HD video decoder driver, from this repository's crystalhd/
+      # (crystalhd/README.md), for an OpenFrame 2 with the card in its mini PCIe slot. A staging
+      # module, as it isn't mainline quality: udev loads it by the card's PCI ID.
+      - name: Add the Crystal HD driver
+        run: |
+          D="linux-${KERNEL_VERSION}/drivers/staging"
+          cp -R crystalhd "${D}/crystalhd"
+          sed -i '/^endif # STAGING/i source "drivers/staging/crystalhd/Kconfig"\n' "${D}/Kconfig"
+          grep -q 'crystalhd/Kconfig' "${D}/Kconfig" || { echo "Couldn't add crystalhd to drivers/staging/Kconfig."; exit 1; }
+          echo 'obj-$(CONFIG_CRYSTALHD) += crystalhd/' >> "${D}/Makefile"
+
       # A test kernel may set symbols on top of the committed configuration (config_set), so a
       # trial never has to change what every published kernel is built with. Each must survive
       # olddefconfig as asked, or the build stops.
@@ -184,10 +195,10 @@ jobs:
       # the wrong place, or a Kconfig entry gone missing (olddefconfig silently drops its
       # symbol), would otherwise ship a kernel without the backlight, light sensor or /dev/fh.
       # (brcmsmac too: the OpenFrame 2's BCM43225 Wi-Fi card, which b43 is kept off by building it
-      # for SSB cards only.)
+      # for SSB cards only. And crystalhd, for the Crystal HD card.)
       - name: Check the OpenFrame drivers are configured
         run: |
-          for c in CONFIG_BACKLIGHT_OPENFRAME=y CONFIG_OPENFRAME_ALS=m CONFIG_OPENFRAME_FH=m CONFIG_BRCMSMAC=m; do
+          for c in CONFIG_BACKLIGHT_OPENFRAME=y CONFIG_OPENFRAME_ALS=m CONFIG_OPENFRAME_FH=m CONFIG_BRCMSMAC=m CONFIG_CRYSTALHD=m; do
             grep -qx "${c}" "linux-${KERNEL_VERSION}/.config" || { echo "${c} isn't in the configuration."; exit 1; }
           done
 
@@ -221,7 +232,7 @@ jobs:
           IMG=$(ls packages/linux-image-*-openframe_*.deb | grep -v -- '-dbg_' | head -1)
           # Listed once, into a file (this job's container runs steps with sh, which has no <<<).
           dpkg-deb -c "${IMG}" > /tmp/image-contents.txt
-          for m in fh.ko openframe-als.ko brcmsmac.ko; do
+          for m in fh.ko openframe-als.ko brcmsmac.ko crystalhd.ko; do
             grep -q "/${m}\(\.[a-z]*\)\?\$" /tmp/image-contents.txt || { echo "${m} isn't in ${IMG}."; exit 1; }
           done
 
