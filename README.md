@@ -88,4 +88,10 @@ For reasons undiscovered, kernel versions 6.3 and above require:
 
 This will compile the kernel and generate the .deb packages.
 
+## Licence
 
+Everything here is under the GNU General Public License version 2 (see [LICENSE](LICENSE)), the
+Linux kernel's licence: the patches and config change the kernel, and `fh`, `crystalhd` and the
+test module in `experiments/` are kernel modules. `crystalhd` comes from Broadcom's GPL driver by way
+of [birdslikewires/crystalhd](https://github.com/birdslikewires/crystalhd) and keeps its own
+notices. The build workflow is under the same licence, so the repository has just the one.
