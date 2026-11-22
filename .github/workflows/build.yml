@@ -40,6 +40,7 @@ on:
 permissions:
   contents: write
   pages: write
+  issues: write   # the "ready to test" issue
 
 concurrency:
   group: build-kernel
@@ -270,99 +271,18 @@ jobs:
           FPR=$(gpg --batch --with-colons --list-secret-keys | awk -F: '/^sec/ { s = 1; next } s && /^fpr/ { print $10; s = 0 }')
           [ "${FPR}" = 179C4F02E55F4096D690F3BFED801B683FCE8553 ] || { echo "Signing key ${FPR} is not the OpenFrame apt key"; exit 1; }
 
+      # The testing and released suites (scripts/apt-suite.sh), tested before they're used.
+      - name: Test the apt suites
+        if: ${{ inputs.publish }}
+        run: bash tests/test_apt_suite.sh
+
+      # To the testing suite (trixie-testing): test units take it now, every other OpenFrame
+      # once it's promoted ("promote" on its issue, promote.yml).
       - name: Update apt repository
         if: ${{ inputs.publish }}
         run: |
-          KCOMPONENT=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
-          POOL="apt-repo/pool/${KCOMPONENT}"
-          BINARY="apt-repo/dists/trixie/${KCOMPONENT}/binary-i386"
-          mkdir -p "${POOL}" "${BINARY}"
-
-          cp packages/*.deb "${POOL}/"
-
-          # Keep only the latest metapackage (prevents apt treating old metapackage
-          # versions in the Packages index as downgrade candidates, which would
-          # stop apt autoremove from cleaning up old versioned kernels)
-          ls "${POOL}/linux-image-openframe-"*.deb 2>/dev/null | sort -rV | tail -n +2 | xargs -r rm -v
-
-          # Keep only the latest version of each versioned package type; older ones
-          # remain available from the GitHub releases (sorted by version, as file
-          # times all date from the checkout)
-          ls "${POOL}/linux-image-"[0-9]*.deb 2>/dev/null | sort -rV | tail -n +2 | xargs -r rm -v
-          ls "${POOL}/linux-headers"*.deb 2>/dev/null | sort -rV | tail -n +2 | xargs -r rm -v
-          rm -fv "${POOL}/linux-libc-dev"*.deb      # no longer published (see Collect packages)
-
-          # Export public signing key for users (binary dearmored for signed-by)
-          gpg --export > apt-repo/key.gpg
-
-          cd apt-repo
-
-          # Generate Packages index for this component
-          dpkg-scanpackages --arch i386 "pool/${KCOMPONENT}" \
-            > "dists/trixie/${KCOMPONENT}/binary-i386/Packages"
-          gzip -9c "dists/trixie/${KCOMPONENT}/binary-i386/Packages" \
-            > "dists/trixie/${KCOMPONENT}/binary-i386/Packages.gz"
-
-          # Discover all components and regenerate the Release file
-          COMPONENTS=$(ls -d dists/trixie/*/binary-i386 2>/dev/null | awk -F/ '{print $3}' | tr '\n' ' ' | sed 's/ $//')
-
-          # Generate Release file
-          apt-ftparchive \
-            -o APT::FTPArchive::Release::Origin="OpenFrame Kernel" \
-            -o APT::FTPArchive::Release::Label="OpenFrame Kernel" \
-            -o APT::FTPArchive::Release::Suite="trixie" \
-            -o APT::FTPArchive::Release::Codename="trixie" \
-            -o APT::FTPArchive::Release::Architectures="i386" \
-            -o "APT::FTPArchive::Release::Components=${COMPONENTS}" \
-            -o APT::FTPArchive::Release::Description="OpenFrame Kernel Packages" \
-            release dists/trixie > dists/trixie/Release
-
-          # Sign Release file
-          GPG_KEY_ID=$(gpg --list-keys --with-colons | awk -F: '/^pub/{print $5; exit}')
-          gpg --batch --yes --default-key "${GPG_KEY_ID}" \
-            --clearsign -o dists/trixie/InRelease dists/trixie/Release
-          gpg --batch --yes --default-key "${GPG_KEY_ID}" \
-            --detach-sign --armor -o dists/trixie/Release.gpg dists/trixie/Release
-
-      - name: Generate directory listing
-        if: ${{ inputs.publish }}
-        run: |
-          cd apt-repo
-          {
-            printf '<!DOCTYPE html>\n<html>\n'
-            printf '<head><title>Index of /</title></head>\n'
-            printf '<body>\n<h1>Index of /</h1><hr><pre>'
-
-            human_size() {
-              local size=$1
-              if [ "$size" -ge 1073741824 ]; then
-                echo "$((size / 1073741824))G"
-              elif [ "$size" -ge 1048576 ]; then
-                echo "$((size / 1048576))M"
-              elif [ "$size" -ge 1024 ]; then
-                echo "$((size / 1024))K"
-              else
-                echo "$size"
-              fi
-            }
-
-            for f in pool/*/*.deb; do
-              [ -f "$f" ] || continue
-              fname=$(basename "$f")
-              fsize=$(stat -c '%s' "$f")
-              fdate=$(date -d "@$(stat -c '%Y' "$f")" '+%d-%b-%Y %H:%M')
-              hsize=$(human_size "$fsize")
-              href="${f}"
-              namelen=${#fname}
-              padlen=$((51 - namelen))
-              [ ${padlen} -lt 1 ] && padlen=1
-              padding=$(printf '%*s' ${padlen} '')
-              printf '\n<a href="%s">%s</a>%s%s  %8s' \
-                "${href}" "${fname}" "${padding}" "${fdate}" "${hsize}"
-            done
-
-            printf '\n</pre><hr></body>\n</html>\n'
-          } > index.html
+          bash scripts/apt-suite.sh add "$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)" packages/*.deb
+          bash scripts/apt-suite.sh listing
 
       - name: Push apt repository
         if: ${{ inputs.publish }}
@@ -372,7 +292,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           git diff --cached --quiet && echo "No changes to commit" || \
-            git commit -m "Publish linux-${KERNEL_VERSION}-openframe"
+            git commit -m "Publish linux-${KERNEL_VERSION}-openframe to testing"
           git push origin repo
 
       - name: Create or update GitHub release
@@ -381,7 +301,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v${KERNEL_VERSION}"
-          NOTES="Kernel ${KERNEL_VERSION} with OpenFrame patches, built for Debian Trixie (i386)."
+          NOTES="Kernel ${KERNEL_VERSION} with OpenFrame patches, built for Debian Trixie (i386). In testing until it's promoted: test units have it, other OpenFrames don't yet."
 
           if gh release view "${TAG}" --repo ${{ github.repository }} >/dev/null 2>&1; then
             gh release upload "${TAG}" \
@@ -389,10 +309,11 @@ jobs:
               --clobber \
               packages/*.deb
           else
+            # A pre-release until it's promoted (promote.yml makes it the latest release).
             gh release create "${TAG}" \
               --repo ${{ github.repository }} \
               --title "Linux ${KERNEL_VERSION}-openframe" \
-              --notes "${NOTES}" \
+              --notes "${NOTES}" --prerelease \
               packages/*.deb
           fi
 
@@ -415,3 +336,30 @@ jobs:
             --method POST \
             --field event_type=kernel-released \
             --field client_payload[kernel_version]="${KERNEL_VERSION}"
+
+      # Tell Andy: an issue assigned to him (vars.TESTING_ASSIGNEE, or andydvsn), which GitHub sends to the app and
+      # by email. "promote" on it releases the kernel and its image to every OpenFrame
+      # (promote.yml); "reject" keeps them back.
+      - name: Open the testing issue
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSIGNEE: ${{ vars.TESTING_ASSIGNEE || 'andydvsn' }}   # who's told (the repository's owner is an organisation)
+        run: |
+          R="${{ github.repository }}"
+          gh label create testing -R "$R" --color FBCA04 --description "Waiting in testing, for promote or reject" --force >/dev/null
+          TITLE="Kernel ${KERNEL_VERSION} is ready to test"
+          if gh issue list -R "$R" --label testing --state open --search "in:title \"${TITLE}\"" --json number -q '.[0].number' | grep -q .; then
+            echo "Its issue is open already."; exit 0
+          fi
+          gh issue create -R "$R" --title "$TITLE" --label testing --assignee "$ASSIGNEE" --body "Kernel ${KERNEL_VERSION} is in kernel.openbeak.net's testing suite. Test units (OF-BOOT/settings/test.txt says \`testing=yes\`) install it overnight and restart at about 4am; other OpenFrames don't have it.
+
+          An image with it is building in openframe-linux, as **image build v${KERNEL_VERSION} (testing kernel)**: https://github.com/birdslikewires/openframe-linux/actions/workflows/build.yml (its artifact, when it's done).
+
+          - [ ] Starts from a USB stick
+          - [ ] Starts from internal memory (OF1)
+          - [ ] Wi-Fi and Ethernet
+          - [ ] Touch, backlight, sound
+          - [ ] Sprite, and an app or two
+
+          Comment **promote** to release the kernel to every OpenFrame and publish that image as the latest release. Comment **reject** to keep them back."

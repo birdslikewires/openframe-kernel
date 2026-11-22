@@ -1,0 +1,114 @@
+name: promote
+run-name: promote or reject a kernel in testing
+
+# Releases a kernel from kernel.openbeak.net's testing suite to every OpenFrame: "promote" as a
+# comment on its "Kernel x.y.z is ready to test" issue (opened by build.yml), by Andy
+# (vars.TESTING_ASSIGNEE, or andydvsn), moves its packages from trixie-testing to trixie, makes its GitHub
+# release the latest, and has openframe-linux publish the image it built with that kernel
+# (kernel-promoted). "reject" closes the issue and keeps it back. Comments from anyone else,
+# or on any other issue, do nothing.
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: build-kernel
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: >-
+      !github.event.issue.pull_request && github.event.comment.user.login == (vars.TESTING_ASSIGNEE || 'andydvsn') &&
+      contains(github.event.issue.labels.*.name, 'testing')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      R: ${{ github.repository }}
+      ISSUE: ${{ github.event.issue.number }}
+
+    steps:
+      - name: Read the comment and the issue
+        env:
+          BODY: ${{ github.event.comment.body }}
+          TITLE: ${{ github.event.issue.title }}
+        run: |
+          word=$(printf '%s' "$BODY" | tr 'A-Z' 'a-z' | tr -cs 'a-z' ' ' | awk '{ print $1 }')
+          case "$word" in promote|reject) ;; *) echo "Not promote or reject: nothing to do."; word=none ;; esac
+          echo "ACTION=$word" >> "$GITHUB_ENV"
+          # "Kernel 6.18.65 is ready to test": only a plain version goes on, into commands
+          version=$(printf '%s' "$TITLE" | sed -nE 's/^Kernel ([0-9]+\.[0-9]+(\.[0-9]+)?) is ready to test$/\1/p')
+          if [ "$word" != none ] && [ -z "$version" ]; then
+            echo "This issue's title doesn't name a kernel: $TITLE"; exit 1
+          fi
+          echo "KERNEL_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        if: env.ACTION == 'promote'
+        uses: actions/checkout@v7
+
+      - name: Checkout repo branch
+        if: env.ACTION == 'promote'
+        uses: actions/checkout@v7
+        with:
+          ref: repo
+          path: apt-repo
+
+      - name: Install tools
+        if: env.ACTION == 'promote'
+        run: sudo apt-get install -y apt-utils dpkg-dev
+
+      - name: Import GPG signing key
+        if: env.ACTION == 'promote'
+        env:
+          KEY: ${{ secrets.APT_SIGNING_KEY_OPENFRAME || secrets.APT_SIGNING_KEY }}
+        run: |
+          echo "${KEY}" | gpg --batch --import
+          FPR=$(gpg --batch --with-colons --list-secret-keys | awk -F: '/^sec/ { s = 1; next } s && /^fpr/ { print $10; s = 0 }')
+          [ "${FPR}" = 179C4F02E55F4096D690F3BFED801B683FCE8553 ] || { echo "Signing key ${FPR} is not the OpenFrame apt key"; exit 1; }
+
+      - name: Promote the kernel
+        if: env.ACTION == 'promote'
+        run: |
+          comp=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
+          waiting=$(bash scripts/apt-suite.sh waiting "$comp")
+          echo "$waiting"
+          grep -q "^linux-image-openframe-${comp} ${KERNEL_VERSION}\$" <<< "$waiting" || {
+            echo "Testing doesn't hold kernel ${KERNEL_VERSION} (a later one replaced it?): not promoting."
+            gh issue comment "$ISSUE" -R "$R" --body "Not promoted: testing doesn't hold ${KERNEL_VERSION} any more."
+            exit 1; }
+          bash scripts/apt-suite.sh promote "$comp"
+          bash scripts/apt-suite.sh listing
+          cd apt-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "Promote linux-${KERNEL_VERSION}-openframe to trixie"
+          git push origin repo
+
+      - name: Make it the latest release
+        if: env.ACTION == 'promote'
+        run: gh release edit "v${KERNEL_VERSION}" -R "$R" --prerelease=false --latest
+
+      # openframe-linux publishes the image it built with this kernel (publish.yml).
+      - name: Publish its image
+        if: env.ACTION == 'promote'
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
+        run: |
+          gh api repos/birdslikewires/openframe-linux/dispatches --method POST \
+            --field event_type=kernel-promoted \
+            --field client_payload[kernel_version]="${KERNEL_VERSION}"
+
+      - name: Close the issue
+        if: env.ACTION != 'none'
+        run: |
+          if [ "$ACTION" = promote ]; then
+            gh issue close "$ISSUE" -R "$R" --comment "Promoted: every OpenFrame installs kernel ${KERNEL_VERSION} overnight. openframe-linux is publishing its image as the latest release."
+          else
+            gh issue close "$ISSUE" -R "$R" --comment "Kept back: only test units have kernel ${KERNEL_VERSION}."
+          fi
