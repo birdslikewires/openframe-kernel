@@ -277,7 +277,7 @@ jobs:
         run: bash tests/test_apt_suite.sh
 
       # To the testing suite (trixie-testing): test units take it now, every other OpenFrame
-      # once it's promoted ("promote" on its issue, promote.yml).
+      # once it's promoted ("ok" in reply to its issue, promote.yml).
       - name: Update apt repository
         if: ${{ inputs.publish }}
         run: |
@@ -338,8 +338,8 @@ jobs:
             --field client_payload[kernel_version]="${KERNEL_VERSION}"
 
       # Tell Andy: an issue assigned to him (vars.TESTING_ASSIGNEE, or andydvsn), which GitHub sends to the app and
-      # by email. "promote" on it releases the kernel and its image to every OpenFrame
-      # (promote.yml); "reject" keeps them back.
+      # by email. "ok" as a reply releases the kernel and its image to every OpenFrame
+      # (promote.yml); "no" keeps them back.
       - name: Open the testing issue
         if: ${{ inputs.publish }}
         env:
@@ -347,7 +347,7 @@ jobs:
           ASSIGNEE: ${{ vars.TESTING_ASSIGNEE || 'andydvsn' }}   # who's told (the repository's owner is an organisation)
         run: |
           R="${{ github.repository }}"
-          gh label create testing -R "$R" --color FBCA04 --description "Waiting in testing, for promote or reject" --force >/dev/null
+          gh label create testing -R "$R" --color FBCA04 --description "Waiting in testing, reply ok to release, no to keep back" --force >/dev/null
           TITLE="Kernel ${KERNEL_VERSION} is ready to test"
           if gh issue list -R "$R" --label testing --state open --search "in:title \"${TITLE}\"" --json number -q '.[0].number' | grep -q .; then
             echo "Its issue is open already."; exit 0
@@ -362,4 +362,4 @@ jobs:
           - [ ] Touch, backlight, sound
           - [ ] Sprite, and an app or two
 
-          Comment **promote** to release the kernel to every OpenFrame and publish that image as the latest release. Comment **reject** to keep them back."
+          Reply **ok** to release the kernel to every OpenFrame and publish that image as the latest release. Reply **no** to keep them back. (Just the word: anything longer is an ordinary comment.)"

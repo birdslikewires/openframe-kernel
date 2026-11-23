@@ -77,9 +77,9 @@ owner. GitHub sends it to the app and by email. openframe-linux builds an image 
 and keeps it as an artifact.
 
 Test units (OpenFrames whose `OF-BOOT/settings/test.txt` says `testing=yes`) install it overnight.
-Everyone else stays on the released kernel until **promote** is commented on the issue:
+Everyone else stays on the released kernel until **ok** is the reply to the issue (just the word):
 `promote.yml` then moves it to the released suite (`trixie`), makes its GitHub release the latest,
-and has openframe-linux publish the image it tested as its latest release. **reject** closes the
+and has openframe-linux publish the image it tested as its latest release. **no** closes the
 issue and keeps it back. `scripts/apt-suite.sh` does the repository's part, and
 `tests/test_apt_suite.sh` tests it before every publish.
 

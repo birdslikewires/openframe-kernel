@@ -1,11 +1,11 @@
 name: promote
-run-name: promote or reject a kernel in testing
+run-name: release (ok) or keep back (no) a kernel in testing
 
-# Releases a kernel from kernel.openbeak.net's testing suite to every OpenFrame: "promote" as a
-# comment on its "Kernel x.y.z is ready to test" issue (opened by build.yml), by Andy
+# Releases a kernel from kernel.openbeak.net's testing suite to every OpenFrame: "ok" as the
+# reply to its "Kernel x.y.z is ready to test" issue (opened by build.yml), by Andy
 # (vars.TESTING_ASSIGNEE, or andydvsn), moves its packages from trixie-testing to trixie, makes its GitHub
 # release the latest, and has openframe-linux publish the image it built with that kernel
-# (kernel-promoted). "reject" closes the issue and keeps it back. Comments from anyone else,
+# (kernel-promoted). "no" closes the issue and keeps it back. Comments from anyone else,
 # or on any other issue, do nothing.
 
 on:
@@ -37,8 +37,10 @@ jobs:
           BODY: ${{ github.event.comment.body }}
           TITLE: ${{ github.event.issue.title }}
         run: |
-          word=$(printf '%s' "$BODY" | tr 'A-Z' 'a-z' | tr -cs 'a-z' ' ' | awk '{ print $1 }')
-          case "$word" in promote|reject) ;; *) echo "Not promote or reject: nothing to do."; word=none ;; esac
+          # The whole comment must be "ok" (promote) or "no" (reject), whatever its case or
+          # punctuation: "ok, I'll try it tomorrow" is just a comment.
+          word=$(printf '%s' "$BODY" | tr 'A-Z' 'a-z' | tr -d '[:space:][:punct:]')
+          case "$word" in ok) word=promote ;; no) word=reject ;; *) echo "Not ok or no on its own: nothing to do."; word=none ;; esac
           echo "ACTION=$word" >> "$GITHUB_ENV"
           # "Kernel 6.18.65 is ready to test": only a plain version goes on, into commands
           version=$(printf '%s' "$TITLE" | sed -nE 's/^Kernel ([0-9]+\.[0-9]+(\.[0-9]+)?) is ready to test$/\1/p')
