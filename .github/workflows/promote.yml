@@ -96,9 +96,12 @@ jobs:
           git commit -qm "Promote linux-${KERNEL_VERSION}-openframe to trixie"
           git push origin repo
 
+      # Its notes too: build.yml's said it was in testing.
       - name: Make it the latest release
         if: env.ACTION == 'promote'
-        run: gh release edit "v${KERNEL_VERSION}" -R "$R" --prerelease=false --latest
+        run: |
+          gh release edit "v${KERNEL_VERSION}" -R "$R" --prerelease=false --latest \
+            --notes "Kernel ${KERNEL_VERSION} with OpenFrame patches, built for Debian Trixie (i386)."
 
       # openframe-linux publishes the image it built with this kernel (publish.yml).
       - name: Publish its image
