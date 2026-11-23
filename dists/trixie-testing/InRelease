@@ -4,36 +4,40 @@ Hash: SHA512
 Architectures: i386
 Codename: trixie-testing
 Components: 6.18
-Date: Mon, 23 Nov 2026 17:26:31 +0000
+Date: Mon, 23 Nov 2026 19:23:48 +0000
 Description: OpenFrame Kernel Packages before release, for test units
 Label: OpenFrame Kernel testing
 Origin: OpenFrame Kernel
 Suite: trixie-testing
 MD5Sum:
- 9bd83f18a35c3d200ac61486eb71a739             1940 6.18/binary-i386/Packages
- 9648a473b6ccb18a5c787eb2f717b13f              832 6.18/binary-i386/Packages.gz
+ d41d8cd98f00b204e9800998ecf8427e                0 6.18/binary-i386/Packages
+ d6a374dc4aadf73b2f8478ac47a9ede5               29 6.18/binary-i386/Packages.gz
+ 732ed40a9c28569040204608942873f1             1179 Release
 SHA1:
- 0eb9b4bbaff85d9ea46903fc02aa98b737a65aa7             1940 6.18/binary-i386/Packages
- ce5b827b3acf1b6ef9b1ee5830fc9ba40b7aec4d              832 6.18/binary-i386/Packages.gz
+ da39a3ee5e6b4b0d3255bfef95601890afd80709                0 6.18/binary-i386/Packages
+ f18bc2d107dfb5bf848da88c32ccc0f4a865ccb0               29 6.18/binary-i386/Packages.gz
+ e2312108b3908f626892047f9687a271f1f96ee9             1179 Release
 SHA256:
- f711284a74397d6d877eab3be0cbb41d13a7b8a93e34eb5cf8816fe49e999065             1940 6.18/binary-i386/Packages
- c2aed3e3796fdf7457dc96f3464cb03bf58cdb55ad0b3f1030824e40a5eee446              832 6.18/binary-i386/Packages.gz
+ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855                0 6.18/binary-i386/Packages
+ 133700f1d30947027a1b4e3b1575ab80f56efcd25a9fc2adb18e616c15f53af1               29 6.18/binary-i386/Packages.gz
+ 212c99d2de0e8ef2553df374bcc44a9e5c15db75cd8682e1b1da339462cbc851             1179 Release
 SHA512:
- 9c94722c567744cc13a2ca8083782363ad55ae44301502fa2073ced647ac185b186ed8db2f5762ee318d4ebe677c67cb27210d90b32b35f2bf78624689ccfab2             1940 6.18/binary-i386/Packages
- f76e247309d690677ebc5ef0dc0860eecbbcaed13c3264bcf6a224d8dd55130aee54b1fc582c6113b82e9aa400cbd5f483d99091d16d0db5e94bc712792769b4              832 6.18/binary-i386/Packages.gz
+ cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e                0 6.18/binary-i386/Packages
+ 2a1c4e737bf527e0b373f2dcea7dc4764d537f6378c7ca765f26dbb056f9fabd33f00fa0c212bfc2ee4f29443d63ba9fa995d8d384587456fb91b96972ffc15a               29 6.18/binary-i386/Packages.gz
+ 823ac4c0eeaea1d2b074f9c693d0c0aa48335d3541dc17e13010d5ea9ff31263cd144909da5e1fb9233fb890d8a786efda444b5a67488f323a6b3adc1b8670b2             1179 Release
 -----BEGIN PGP SIGNATURE-----
 
-iQIzBAEBCgAdFiEEF5xPAuVfQJbWkPO/7YAbaD/OhVMFAmsEd0cACgkQ7YAbaD/O
-hVOp+w//b4WOOPSLLFk8bY4b+Lx01EX0XgDzGuTVVCvW9fjXuLuFns0WwJJku4RA
-E7x6PMxvztSgxa3uCVLzCvaCWf5Qpn1X1Z/uXiU5/rr3AROQj4bO00Q6ISWlyxcM
-6Bw+eyNrAYxSnDnX50rI95WBKc6EOezAPqN64apKiE6e++w922Wnz76T4huGL2hY
-Fv+/LX4AUR95LBbXCKSP/8gpCek8dPhZi/61A3CBBhSLcIHUxP5ysM9Sr+T5Cyo8
-l6UmJ9+nA7bcv92TEJDMkFYNTgsH70RZd3nBTLtWxZeX2KP2+YW4lqmXjUfgingY
-z2rE4MeDIhT5kz2TStiJJ3Cy6JHohLBGeRtBgh5f1u2+YU7VtCzysuMV3WVdV+4a
-KX/g9d8Qp3udOPXHcBwGXs2GXxqw8NNwE3FkVeyBqWCL1IK5rje0lURjSMUwQbNY
-heEXjAUopXqoFTfFMzcUsqY8e5MedYeLs79vC93Qx4fJ8bC+oa3mWTbKRos08L3Z
-HwB18AK/Ib+3EMw7r5HCDYUpqiSomFzooy81NAchMPuogqEFQ9Kj2YDta5BDjNlZ
-pms1qwnZ9T1w8GZrjz08CLswIHAkK1mGcS3SDaPkzbKWoVqIWlYlq+GYpoEM+FFe
-/X37IFoel4PWx1ghWI0ni784GQuAxhqUVeukVQVIMN9KUgswqhk=
-=t/KL
+iQIzBAEBCgAdFiEEF5xPAuVfQJbWkPO/7YAbaD/OhVMFAmsEksQACgkQ7YAbaD/O
+hVPahA/+Nas7x4p+5vRNl0uT28PFpon6vooXpOJCEsd3xjP2BJN/g74hJjHZk9G3
+J8xXfn654m1kmQT3lh+0KSjpKY5E7LJefPd66ieF/d0kDz5O6HcqlLl+nndOApIw
+64lBO4M+npyeMfFqmGRZ4ixC95tIYTo+K258CJTbusisilLwRHW027tQJ2kGc/nQ
+aJ+Qy1gonPrN31F2ghMdrGa3zXemA4WYyhSRXKhln94s8Eko9jM8H5SK/asBWPX9
+jDPk5jHTzW1yVNApLtpVpGPOGe7JbC6lIuplousBSUtND25k/T83O5woKtjnW1YM
+p2nTZKmPXaoqwHhyuIIrWDXlXeNZKgsph+U773tfd8H+uNwq1kHS9d9e23bS08bW
+GSkRaDyCcf9CTcJSuHs6OI5Opfpm20ibBPmSsOUbvZ6qmAHy/nEj09Fxys79bbWX
+0gogl7ok9h8iiHJQxDKfwn7TgqA/M74W0qIjwsGU0aoEKYFFGlPyeG8B3FS1AxVH
+oMf31u18nfFRTbE2Dr8ZsrJJu1O7kWQpvzW6e3bWOyV1GN2QoIMc4Wb6wKRbJXB6
+hVn1iVZQHBQcEKc+o4kJGKqCurDQ6NPOZdt4CUqtwYd4R7W7Ws2IUBRdvR3ytm/m
+iad8DCXG6ZgMLxNwHYZCVzUODnzN9vqgTz08AucaITihox9CRv4=
+=CiF1
 -----END PGP SIGNATURE-----
