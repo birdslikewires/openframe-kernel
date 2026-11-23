@@ -78,8 +78,10 @@ jobs:
           WANTED_REVISION: ${{ inputs.package_revision }}
         run: |
           KCOMPONENT=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
-          POOL="apt-repo/pool/${KCOMPONENT}"
-          LAST_REV=$(ls "${POOL}/linux-image-${KERNEL_VERSION}-openframe_${KERNEL_VERSION}-"*.deb 2>/dev/null \
+          # The last revision in either suite: a kernel rebuilt while it's still in testing (a
+          # fix found there) comes out one above, or test units that have it never take the fix
+          LAST_REV=$(ls "apt-repo/pool/${KCOMPONENT}/linux-image-${KERNEL_VERSION}-openframe_${KERNEL_VERSION}-"*.deb \
+            "apt-repo/pool/testing-${KCOMPONENT}/linux-image-${KERNEL_VERSION}-openframe_${KERNEL_VERSION}-"*.deb 2>/dev/null \
             | grep -oP '(?<='"${KERNEL_VERSION}"'-)\d+(?=_i386\.deb)' | sort -n | tail -1)
           PKG_REVISION=$(( ${LAST_REV:-0} + 1 ))
           if [ -n "${WANTED_REVISION}" ]; then
