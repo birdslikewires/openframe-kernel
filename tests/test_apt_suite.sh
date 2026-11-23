@@ -13,6 +13,11 @@ if [ "$(id -u)" -ne 0 ] || [ ! -e /.dockerenv ]; then
 	exec docker run --rm --security-opt seccomp=unconfined --platform linux/386 -v "$HERE:/src:ro" \
 		i386/debian:trixie bash /src/tests/test_apt_suite.sh
 fi
+# Otherwise in the container it's in, as a CI job's own: where this repository is ($HERE, not
+# /src), and that container's apt set back as it was when done (the test makes it i386 only,
+# with only the test's repository)
+cp -a /etc/apt /tmp/apt-before
+trap 'rm -rf /etc/apt; mv /tmp/apt-before /etc/apt' EXIT
 FAILS=0
 ok() { echo "ok   $1"; }
 bad() { echo "FAIL $1"; [ -n "${2:-}" ] && sed 's/^/       /' <<< "$2" | tail -12; FAILS=$((FAILS + 1)); }
@@ -31,7 +36,7 @@ deb() { # name version
 }
 mkdir -p /tmp/k
 deb linux-image-openframe-6.18 6.18.64; deb linux-image-6.18.64-openframe 6.18.64-6
-S=/src/scripts/apt-suite.sh
+S=$HERE/scripts/apt-suite.sh
 bash $S add 6.18 /tmp/k/*.deb >/dev/null; bash $S promote 6.18 >/dev/null
 rm /tmp/k/*; deb linux-image-openframe-6.18 6.18.65; deb linux-image-6.18.65-openframe 6.18.65-1
 bash $S add 6.18 /tmp/k/*.deb >/dev/null && ok "6.18.65 to testing" || bad "6.18.65 to testing"
