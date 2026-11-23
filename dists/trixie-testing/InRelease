@@ -1,0 +1,39 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Architectures: i386
+Codename: trixie-testing
+Components: 6.18
+Date: Mon, 23 Nov 2026 17:26:31 +0000
+Description: OpenFrame Kernel Packages before release, for test units
+Label: OpenFrame Kernel testing
+Origin: OpenFrame Kernel
+Suite: trixie-testing
+MD5Sum:
+ 9bd83f18a35c3d200ac61486eb71a739             1940 6.18/binary-i386/Packages
+ 9648a473b6ccb18a5c787eb2f717b13f              832 6.18/binary-i386/Packages.gz
+SHA1:
+ 0eb9b4bbaff85d9ea46903fc02aa98b737a65aa7             1940 6.18/binary-i386/Packages
+ ce5b827b3acf1b6ef9b1ee5830fc9ba40b7aec4d              832 6.18/binary-i386/Packages.gz
+SHA256:
+ f711284a74397d6d877eab3be0cbb41d13a7b8a93e34eb5cf8816fe49e999065             1940 6.18/binary-i386/Packages
+ c2aed3e3796fdf7457dc96f3464cb03bf58cdb55ad0b3f1030824e40a5eee446              832 6.18/binary-i386/Packages.gz
+SHA512:
+ 9c94722c567744cc13a2ca8083782363ad55ae44301502fa2073ced647ac185b186ed8db2f5762ee318d4ebe677c67cb27210d90b32b35f2bf78624689ccfab2             1940 6.18/binary-i386/Packages
+ f76e247309d690677ebc5ef0dc0860eecbbcaed13c3264bcf6a224d8dd55130aee54b1fc582c6113b82e9aa400cbd5f483d99091d16d0db5e94bc712792769b4              832 6.18/binary-i386/Packages.gz
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCgAdFiEEF5xPAuVfQJbWkPO/7YAbaD/OhVMFAmsEd0cACgkQ7YAbaD/O
+hVOp+w//b4WOOPSLLFk8bY4b+Lx01EX0XgDzGuTVVCvW9fjXuLuFns0WwJJku4RA
+E7x6PMxvztSgxa3uCVLzCvaCWf5Qpn1X1Z/uXiU5/rr3AROQj4bO00Q6ISWlyxcM
+6Bw+eyNrAYxSnDnX50rI95WBKc6EOezAPqN64apKiE6e++w922Wnz76T4huGL2hY
+Fv+/LX4AUR95LBbXCKSP/8gpCek8dPhZi/61A3CBBhSLcIHUxP5ysM9Sr+T5Cyo8
+l6UmJ9+nA7bcv92TEJDMkFYNTgsH70RZd3nBTLtWxZeX2KP2+YW4lqmXjUfgingY
+z2rE4MeDIhT5kz2TStiJJ3Cy6JHohLBGeRtBgh5f1u2+YU7VtCzysuMV3WVdV+4a
+KX/g9d8Qp3udOPXHcBwGXs2GXxqw8NNwE3FkVeyBqWCL1IK5rje0lURjSMUwQbNY
+heEXjAUopXqoFTfFMzcUsqY8e5MedYeLs79vC93Qx4fJ8bC+oa3mWTbKRos08L3Z
+HwB18AK/Ib+3EMw7r5HCDYUpqiSomFzooy81NAchMPuogqEFQ9Kj2YDta5BDjNlZ
+pms1qwnZ9T1w8GZrjz08CLswIHAkK1mGcS3SDaPkzbKWoVqIWlYlq+GYpoEM+FFe
+/X37IFoel4PWx1ghWI0ni784GQuAxhqUVeukVQVIMN9KUgswqhk=
+=t/KL
+-----END PGP SIGNATURE-----
