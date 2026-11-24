@@ -362,6 +362,8 @@ jobs:
             --field event_type=kernel-released \
             --field client_payload[kernel_version]="${KERNEL_VERSION}"
 
+      # (The body starts with what's in testing: GitHub's push notification for a new issue
+      # shows the start of its body.)
       # Tell Andy: an issue assigned to him (vars.TESTING_ASSIGNEE, or andydvsn), which GitHub sends to the app and
       # by email. "ok" as a reply releases the kernel and its image to every OpenFrame
       # (promote.yml); "no" keeps them back.
@@ -377,7 +379,9 @@ jobs:
           if gh issue list -R "$R" --label testing --state open --search "in:title \"${TITLE}\"" --json number -q '.[0].number' | grep -q .; then
             echo "Its issue is open already."; exit 0
           fi
-          gh issue create -R "$R" --title "$TITLE" --label testing --assignee "$ASSIGNEE" --body "Kernel ${KERNEL_VERSION} is in kernel.openbeak.net's testing suite. Test units (OF-BOOT/settings/test.txt says \`testing=yes\`) install it overnight and restart at about 4am; other OpenFrames don't have it.
+          gh issue create -R "$R" --title "$TITLE" --label testing --assignee "$ASSIGNEE" --body "In testing: kernel ${KERNEL_VERSION}-${PKG_REVISION}.
+
+          It's in kernel.openbeak.net's testing suite. Test units (OF-BOOT/settings/test.txt says \`testing=yes\`) install it overnight and restart at about 4am; other OpenFrames don't have it.
 
           An image with it is building in openframe-linux, as **image build v${KERNEL_VERSION} (testing kernel)**: https://github.com/birdslikewires/openframe-linux/actions/workflows/build.yml (its artifact, when it's done).
 
