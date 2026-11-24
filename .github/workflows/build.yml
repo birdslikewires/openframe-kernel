@@ -205,6 +205,27 @@ jobs:
             grep -qx "${c}" "linux-${KERNEL_VERSION}/.config" || { echo "${c} isn't in the configuration."; exit 1; }
           done
 
+      # The source the kernel is built from, for its GitHub release (the GPL's corresponding
+      # source): the tree as it is now, upstream with our patches, the fh and Crystal HD drivers
+      # and the configuration in .config, before anything is built, with a note of how it's
+      # built. Published kernels only.
+      - name: Make the source tarball
+        if: ${{ inputs.publish }}
+        run: |
+          K="linux-${KERNEL_VERSION}"
+          cat > "${K}/OPENFRAME-BUILD.txt" <<EOF
+          Linux ${KERNEL_VERSION} for the OpenFrame, package ${KERNEL_VERSION}-${PKG_REVISION}: the source
+          as it was built, upstream's with the patches, drivers and configuration (.config) of
+          https://github.com/birdslikewires/openframe-kernel at $(git rev-parse HEAD).
+          Built on Debian Trixie with:
+            make ARCH=i386 CROSS_COMPILE=i686-linux-gnu- LOCALVERSION=-openframe \\
+              KDEB_PKGVERSION=${KERNEL_VERSION}-${PKG_REVISION} bindeb-pkg
+          EOF
+          mkdir -p source
+          XZ_OPT=-T0 tar -cJf "source/linux-${KERNEL_VERSION}-openframe-${PKG_REVISION}-source.tar.xz" "${K}"
+          rm "${K}/OPENFRAME-BUILD.txt"
+          ls -lh source/
+
       # DEBFULLNAME/DEBEMAIL name the packages' maintainer (otherwise the build container's root).
       - name: Build kernel packages
         env:
@@ -309,14 +330,14 @@ jobs:
             gh release upload "${TAG}" \
               --repo ${{ github.repository }} \
               --clobber \
-              packages/*.deb
+              packages/*.deb source/*.tar.xz
           else
             # A pre-release until it's promoted (promote.yml makes it the latest release).
             gh release create "${TAG}" \
               --repo ${{ github.repository }} \
               --title "Linux ${KERNEL_VERSION}-openframe" \
               --notes "${NOTES}" --prerelease \
-              packages/*.deb
+              packages/*.deb source/*.tar.xz
           fi
 
       - name: Delete old GitHub releases and tags
