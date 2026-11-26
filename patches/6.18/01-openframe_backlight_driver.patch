@@ -37,7 +37,7 @@
  obj-$(CONFIG_BACKLIGHT_PWM)		+= pwm_bl.o
 --- /dev/null
 +++ b/drivers/video/backlight/openframe_bl.c
-@@ -0,0 +1,162 @@
+@@ -0,0 +1,185 @@
 +/*
 + *  Backlight Driver for Openframe devices
 + *
@@ -74,6 +74,28 @@
 +
 +#define PP_CONTROL_OFFSET	0x61204
 +#define POWER_TARGET_ON		(1 << 0)
++#define PANEL_UNLOCK_REGS	(0xabcd << 16)
++#define PP_ON_DELAYS		1	/* the register after PP_CONTROL */
++#define LIGHT_ON_DELAY_MASK	0x1fff
++#define LIGHT_ON_DELAY		2500	/* 250 ms, in 100 us units */
++
++/*
++ * The firmware leaves the panel power sequencer's backlight-on delay at 0, so the
++ * backlight comes on with the panel, which shows white while it starts: a flash each
++ * time the panel powers up again (waking from a brightness of 0). Holding the backlight
++ * off for 250 ms lets the panel start in the dark. The delay registers only take a
++ * write while PP_CONTROL holds the unlock key.
++ */
++static void openframe_light_on_delay(void)
++{
++	u32 ctl = pp_control[0], on = pp_control[PP_ON_DELAYS];
++
++	if (on & LIGHT_ON_DELAY_MASK)
++		return;
++	pp_control[0] = ctl | PANEL_UNLOCK_REGS;
++	pp_control[PP_ON_DELAYS] = on | LIGHT_ON_DELAY;
++	pp_control[0] = ctl;
++}
 +
 +static int openframe_set_intensity(struct backlight_device *bd)
 +{
@@ -125,7 +147,7 @@
 +		pci_dev_put(gfx_dev);
 +		return -ENOMEM;
 +	}
-+	pp_control = ioremap(temp + PP_CONTROL_OFFSET, 4);
++	pp_control = ioremap(temp + PP_CONTROL_OFFSET, 8);	/* and PP_ON_DELAYS */
 +	if (!pp_control) {
 +		iounmap(bl_baseptr);
 +		pci_dev_put(gfx_dev);
@@ -147,6 +169,7 @@
 +	}
 +	platform_set_drvdata(pdev, openframe_backlight_device);
 +
++	openframe_light_on_delay();
 +	openframe_set_intensity(openframe_backlight_device);
 +
 +	return 0;
