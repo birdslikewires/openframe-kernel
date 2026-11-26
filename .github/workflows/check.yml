@@ -10,6 +10,7 @@ permissions:
   contents: write
   pages: write
   issues: write   # build.yml's "ready to test" issue
+  actions: read   # build.yml asks for it (an earlier test kernel's artifact)
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
