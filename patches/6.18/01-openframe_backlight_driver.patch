@@ -37,7 +37,7 @@
  obj-$(CONFIG_BACKLIGHT_PWM)		+= pwm_bl.o
 --- /dev/null
 +++ b/drivers/video/backlight/openframe_bl.c
-@@ -0,0 +1,185 @@
+@@ -0,0 +1,188 @@
 +/*
 + *  Backlight Driver for Openframe devices
 + *
@@ -67,15 +67,16 @@
 +#include <linux/fb.h>
 +#include <linux/backlight.h>
 +#include <linux/pci.h>
++#include <linux/io.h>
 +
 +static struct pci_dev *gfx_dev = NULL;
-+static u32 *bl_baseptr = NULL;
-+static u32 *pp_control = NULL;
++static u32 __iomem *bl_baseptr = NULL;
++static u32 __iomem *pp_control = NULL;
 +
 +#define PP_CONTROL_OFFSET	0x61204
 +#define POWER_TARGET_ON		(1 << 0)
 +#define PANEL_UNLOCK_REGS	(0xabcd << 16)
-+#define PP_ON_DELAYS		1	/* the register after PP_CONTROL */
++#define PP_ON_DELAYS		4	/* the register after PP_CONTROL */
 +#define LIGHT_ON_DELAY_MASK	0x1fff
 +#define LIGHT_ON_DELAY		2500	/* 250 ms, in 100 us units */
 +
@@ -84,17 +85,19 @@
 + * backlight comes on with the panel, which shows white while it starts: a flash each
 + * time the panel powers up again (waking from a brightness of 0). Holding the backlight
 + * off for 250 ms lets the panel start in the dark. The delay registers only take a
-+ * write while PP_CONTROL holds the unlock key.
++ * write while PP_CONTROL holds the unlock key (writel, not a plain store: the compiler
++ * dropped the unlock as a store overwritten before anything read it).
 + */
 +static void openframe_light_on_delay(void)
 +{
-+	u32 ctl = pp_control[0], on = pp_control[PP_ON_DELAYS];
++	void __iomem *on_delays = (void __iomem *)pp_control + PP_ON_DELAYS;
++	u32 ctl = readl(pp_control), on = readl(on_delays);
 +
 +	if (on & LIGHT_ON_DELAY_MASK)
 +		return;
-+	pp_control[0] = ctl | PANEL_UNLOCK_REGS;
-+	pp_control[PP_ON_DELAYS] = on | LIGHT_ON_DELAY;
-+	pp_control[0] = ctl;
++	writel(ctl | PANEL_UNLOCK_REGS, pp_control);
++	writel(on | LIGHT_ON_DELAY, on_delays);
++	writel(ctl, pp_control);
 +}
 +
 +static int openframe_set_intensity(struct backlight_device *bd)
@@ -105,11 +108,11 @@
 +		intensity = 0;
 +
 +	if (intensity == 0) {
-+		*bl_baseptr = 0;
-+		*pp_control &= ~POWER_TARGET_ON;
++		writel(0, bl_baseptr);
++		writel(readl(pp_control) & ~POWER_TARGET_ON, pp_control);
 +	} else {
-+		*pp_control |= POWER_TARGET_ON;
-+		*bl_baseptr = (intensity << 1) | 0x400000;
++		writel(readl(pp_control) | POWER_TARGET_ON, pp_control);
++		writel((intensity << 1) | 0x400000, bl_baseptr);
 +	}
 +
 +	return 0;
@@ -119,7 +122,7 @@
 +{
 +	int intensity;
 +
-+	intensity = (*bl_baseptr >> 1) & 0x3f;
++	intensity = (readl(bl_baseptr) >> 1) & 0x3f;
 +
 +	return intensity;
 +}
