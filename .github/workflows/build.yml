@@ -15,6 +15,10 @@ on:
         required: false
         type: boolean
         default: true
+      from_run:
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       kernel_version:
@@ -36,11 +40,17 @@ on:
         required: false
         type: string
         default: ''
+      from_run:
+        description: 'Publish an earlier test kernel instead of building: its run ID (the number in the run''s address). kernel_version must be its version'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: write
   pages: write
   issues: write   # the "ready to test" issue
+  actions: read   # an earlier test kernel's artifact (from_run)
 
 concurrency:
   group: build-kernel
@@ -48,7 +58,9 @@ concurrency:
 
 jobs:
 
+  # Builds the packages and keeps them, the source tarball and a note of the build (build-info.txt) as the run's artifact: a test kernel's for 14 days, so it can be tried by hand and published as it is (from_run), a published one's only for the publish job. Skipped when publishing an earlier test kernel.
   build:
+    if: ${{ inputs.from_run == '' }}
     runs-on: ubuntu-latest
     container: debian:trixie
     env:
@@ -208,9 +220,8 @@ jobs:
       # The source the kernel is built from, for its GitHub release (the GPL's corresponding
       # source): the tree as it is now, upstream with our patches, the fh and Crystal HD drivers
       # and the configuration in .config, before anything is built, with a note of how it's
-      # built. Published kernels only.
+      # built. Test kernels too, so one can be published as it is.
       - name: Make the source tarball
-        if: ${{ inputs.publish }}
         run: |
           K="linux-${KERNEL_VERSION}"
           cat > "${K}/OPENFRAME-BUILD.txt" <<EOF
@@ -274,21 +285,91 @@ jobs:
           dpkg-deb --build --root-owner-group "${METADIR}" \
             "packages/${METAPKG}_${KERNEL_VERSION}_i386.deb"
 
-      # A test kernel (publish off): its packages are only this run's artifact, for trying on a
-      # unit by hand (gh run download), so no unit gets it from apt.
-      - name: Keep the packages as an artifact (test kernel)
-        if: ${{ !inputs.publish }}
+      # What the publish job checks before it publishes these packages, from this run or a later one (from_run)
+      - name: Note the build
+        env:
+          CONFIG_SET: ${{ inputs.config_set }}
+        run: |
+          printf 'kernel_version=%s\npackage_revision=%s\nconfig_set=%s\ncommit=%s\n' "${KERNEL_VERSION}" "${PKG_REVISION}" "${CONFIG_SET}" "$(git rev-parse HEAD)" > build-info.txt
+          cat build-info.txt
+
+      # A test kernel (publish off) is only this run's artifact, for trying on a unit by hand (gh run download), so no unit gets it from apt until it's published (from_run).
+      - name: Keep the packages as an artifact
         uses: actions/upload-artifact@v7
         with:
+          name: kernel-${{ inputs.kernel_version }}${{ !inputs.publish && '-test' || '' }}
+          path: |
+            packages/*.deb
+            source/*.tar.xz
+            build-info.txt
+          retention-days: ${{ !inputs.publish && 14 || 1 }}
+
+  # Publishes this run's packages, or an earlier test kernel's (from_run) once it has been tried, without building it again.
+  publish:
+    needs: build
+    if: ${{ always() && inputs.publish && (needs.build.result == 'success' || (needs.build.result == 'skipped' && inputs.from_run != '')) }}
+    runs-on: ubuntu-latest
+    container: debian:trixie
+    env:
+      KERNEL_VERSION: ${{ inputs.kernel_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install publishing tools
+        run: |
+          apt-get update
+          apt-get install -y curl git gnupg gh dpkg-dev apt-utils
+
+      - name: Checkout apt repository
+        uses: actions/checkout@v7
+        with:
+          ref: repo
+          path: apt-repo
+
+      - name: Fetch this run's packages
+        if: ${{ inputs.from_run == '' }}
+        uses: actions/download-artifact@v7
+        with:
+          name: kernel-${{ inputs.kernel_version }}
+          path: built
+
+      - name: Fetch the test kernel's packages
+        if: ${{ inputs.from_run != '' }}
+        uses: actions/download-artifact@v7
+        with:
           name: kernel-${{ inputs.kernel_version }}-test
-          path: packages/*.deb
-          retention-days: 14
+          path: built
+          run-id: ${{ inputs.from_run }}
+          github-token: ${{ github.token }}
+
+      # Only what's publishable: the version asked for, built from the committed configuration (no config_set), with its source, and a revision above any in either suite (a revision is never reused, and test units that have an older one must take it).
+      - name: Check the packages
+        run: |
+          I=built/build-info.txt
+          [ -f "$I" ] || { echo "No build-info.txt: a test kernel built before test kernels could be published. Build it again."; exit 1; }
+          cat "$I"
+          BUILT=$(sed -n 's/^kernel_version=//p' "$I")
+          PKG_REVISION=$(sed -n 's/^package_revision=//p' "$I")
+          CONFIG_SET=$(sed -n 's/^config_set=//p' "$I")
+          [ "${BUILT}" = "${KERNEL_VERSION}" ] || { echo "That run built ${BUILT}, not ${KERNEL_VERSION}."; exit 1; }
+          [ -z "${CONFIG_SET}" ] || { echo "That run set config symbols (${CONFIG_SET}): a trial, not publishable."; exit 1; }
+          case "${PKG_REVISION}" in ''|*[!0-9]*) echo "Bad package revision '${PKG_REVISION}'."; exit 1 ;; esac
+          ls built/source/linux-${KERNEL_VERSION}-openframe_${KERNEL_VERSION}-${PKG_REVISION}_source.tar.xz >/dev/null || { echo "No source tarball."; exit 1; }
+          ls built/packages/linux-image-${KERNEL_VERSION}-openframe_${KERNEL_VERSION}-${PKG_REVISION}_i386.deb >/dev/null || { echo "No linux-image ${KERNEL_VERSION}-${PKG_REVISION}."; exit 1; }
+          KCOMPONENT=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
+          LAST_REV=$(ls "apt-repo/pool/${KCOMPONENT}/linux-image-${KERNEL_VERSION}-openframe_${KERNEL_VERSION}-"*.deb \
+            "apt-repo/pool/testing-${KCOMPONENT}/linux-image-${KERNEL_VERSION}-openframe_${KERNEL_VERSION}-"*.deb 2>/dev/null \
+            | grep -oP '(?<='"${KERNEL_VERSION}"'-)\d+(?=_i386\.deb)' | sort -n | tail -1)
+          [ "${PKG_REVISION}" -gt "${LAST_REV:-0}" ] || { echo "${KERNEL_VERSION}-${PKG_REVISION} isn't above ${KERNEL_VERSION}-${LAST_REV}, already in the apt repository. Build it again."; exit 1; }
+          mv built/packages built/source .
+          echo "PKG_REVISION=${PKG_REVISION}" >> $GITHUB_ENV
+          echo "Publishing ${KERNEL_VERSION}-${PKG_REVISION}"
 
       # Every OpenFrame apt repository is signed with one key, APT_SIGNING_KEY_OPENFRAME
       # (this repository's own APT_SIGNING_KEY until that is set: the same key). Anything
       # else stops the build before it publishes.
       - name: Import GPG signing key
-        if: ${{ inputs.publish }}
         env:
           KEY: ${{ secrets.APT_SIGNING_KEY_OPENFRAME || secrets.APT_SIGNING_KEY }}
         run: |
@@ -298,19 +379,16 @@ jobs:
 
       # The testing and released suites (scripts/apt-suite.sh), tested before they're used.
       - name: Test the apt suites
-        if: ${{ inputs.publish }}
         run: bash tests/test_apt_suite.sh
 
       # To the testing suite (trixie-testing): test units take it now, every other OpenFrame
       # once it's promoted ("ok" in reply to its issue, promote.yml).
       - name: Update apt repository
-        if: ${{ inputs.publish }}
         run: |
           bash scripts/apt-suite.sh add "$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)" packages/*.deb
           bash scripts/apt-suite.sh listing
 
       - name: Push apt repository
-        if: ${{ inputs.publish }}
         run: |
           cd apt-repo
           git config user.name "github-actions[bot]"
@@ -321,7 +399,6 @@ jobs:
           git push origin repo
 
       - name: Create or update GitHub release
-        if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -343,7 +420,6 @@ jobs:
           fi
 
       - name: Delete old GitHub releases and tags
-        if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -353,7 +429,6 @@ jobs:
           done
 
       - name: Dispatch image build in openframe-linux
-        if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
         run: |
@@ -368,7 +443,6 @@ jobs:
       # by email. "ok" as a reply releases the kernel and its image to every OpenFrame
       # (promote.yml); "no" keeps them back.
       - name: Open the testing issue
-        if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ github.token }}
           ASSIGNEE: ${{ vars.TESTING_ASSIGNEE || 'andydvsn' }}   # who's told (the repository's owner is an organisation)

@@ -83,6 +83,8 @@ and has openframe-linux publish the image it tested as its latest release. **no*
 issue and keeps it back. `scripts/apt-suite.sh` does the repository's part, and
 `tests/test_apt_suite.sh` tests it before every publish.
 
+A test kernel is `build.yml` run by hand with **publish** off. Its packages, source and a note of the build are kept with the run for 14 days, for trying on a unit (`gh run download <run ID>`), and no OpenFrame gets it from apt. Once it's been tried, run `build.yml` again with the same kernel version and the test run's ID as **from_run**, and it publishes those very packages to testing, as above, without building them again. It refuses a test kernel built with **config_set** (a trial, not the configuration that ships), one for another version, and one whose revision is no longer above the apt repository's.
+
 ## Building
 
 ### The GitHub Way
