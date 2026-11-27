@@ -343,6 +343,22 @@ jobs:
           run-id: ${{ inputs.from_run }}
           github-token: ${{ github.token }}
 
+      # An earlier run's artifact says what it is (build-info.txt) itself, so where it came from is checked with GitHub: this repository's build.yml, run on main, finished, and from the commit its note names.
+      - name: Check where the test kernel came from
+        if: ${{ inputs.from_run != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FROM_RUN: ${{ inputs.from_run }}
+        run: |
+          case "${FROM_RUN}" in ''|*[!0-9]*) echo "from_run '${FROM_RUN}' isn't a run's number."; exit 1 ;; esac
+          read -r WF BRANCH STATUS CONCLUSION SHA < <(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${FROM_RUN}" \
+            -q '[.path, .head_branch, .status, .conclusion, .head_sha] | @tsv' | tr '\t' ' ')
+          [ "${WF}" = .github/workflows/build.yml ] || { echo "Run ${FROM_RUN} is ${WF}, not build.yml."; exit 1; }
+          [ "${BRANCH}" = main ] || { echo "Run ${FROM_RUN} ran on ${BRANCH}, not main."; exit 1; }
+          [ "${STATUS}" = completed ] && [ "${CONCLUSION}" = success ] || { echo "Run ${FROM_RUN} is ${STATUS}/${CONCLUSION}."; exit 1; }
+          COMMIT=$(sed -n 's/^commit=//p' built/build-info.txt)
+          [ "${COMMIT}" = "${SHA}" ] || { echo "Its note says commit ${COMMIT}, but the run was of ${SHA}."; exit 1; }
+
       # Only what's publishable: the version asked for, built from the committed configuration (no config_set), with its source, and a revision above any in either suite (a revision is never reused, and test units that have an older one must take it).
       - name: Check the packages
         run: |
