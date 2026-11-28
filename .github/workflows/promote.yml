@@ -118,8 +118,8 @@ jobs:
         if: env.ACTION != 'none'
         run: |
           if [ "$ACTION" = promote ]; then
-            # (closed by testing-issue.sh, as OpenBeak's other repositories' are, with nothing left waiting)
-            ASSIGNEE="${{ vars.TESTING_ASSIGNEE || 'andydvsn' }}" GITHUB_REPOSITORY="$R" bash scripts/testing-issue.sh "Promoted: every OpenFrame installs kernel ${KERNEL_VERSION} overnight. openframe-linux is publishing its image as the latest release."
+            # (closed by testing-issue.sh, as OpenBeak's other repositories' are: anything else waiting has an issue of its own, or gets one)
+            ASSIGNEE="${{ vars.TESTING_ASSIGNEE || 'andydvsn' }}" GITHUB_REPOSITORY="$R" bash scripts/testing-issue.sh --answered "$ISSUE" "Promoted: every OpenFrame installs kernel ${KERNEL_VERSION} overnight. openframe-linux is publishing its image as the latest release."
           else
             gh issue close "$ISSUE" -R "$R" --comment "Kept back: only test units have kernel ${KERNEL_VERSION}."
           fi

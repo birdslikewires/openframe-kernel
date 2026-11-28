@@ -76,7 +76,7 @@ pre-release, and opens or updates the *Waiting in testing* issue, as OpenBeak's 
 
 Test units (OpenFrames whose `OF-BOOT/settings/test.txt` says `testing=yes`) install it overnight.
 Everyone else stays on the released kernel until **ok** is the reply to the issue (just the word):
-`promote.yml` then moves it to the released suite (`trixie`), makes its GitHub release the latest,
+`promote.yml` then moves it to the released suite (`trixie`, and closes the issue: a kernel published after the reply has an issue of its own), makes its GitHub release the latest,
 and has openframe-linux publish the image it tested as its latest release. **no** closes the
 issue and keeps it back. `scripts/apt-suite.sh` does the repository's part, and
 `tests/test_apt_suite.sh` tests it before every publish.
