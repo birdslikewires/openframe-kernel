@@ -45,7 +45,8 @@ unit() { echo "$@" | tr ' ' '\n' | sed "s#.*#deb [signed-by=/tmp/key.gpg] file:$
 	rm -f /etc/apt/sources.list.d/debian.sources; apt-get -qq update 2>&1; apt-cache policy linux-image-openframe-6.18 | sed -n 's/^  Candidate: //p'; }
 [ "$(unit trixie | tail -1)" = 6.18.64 ] && ok "a released unit stays on 6.18.64" || bad "a released unit stays on 6.18.64" "$(unit trixie)"
 [ "$(unit trixie trixie-testing | tail -1)" = 6.18.65 ] && ok "a test unit gets 6.18.65" || bad "a test unit gets 6.18.65" "$(unit trixie trixie-testing)"
-[ "$(bash $S waiting 6.18 | sort | tr '\n' ,)" = "linux-image-6.18.65-openframe 6.18.65-1,linux-image-openframe-6.18 6.18.65," ] && ok "waiting lists it" || bad "waiting lists it" "$(bash $S waiting 6.18)"
+[ "$(bash $S waiting 6.18 | sort | tr '\n' ,)" = "linux-image-6.18.65-openframe 6.18.65-1 6.18.64-6,linux-image-openframe-6.18 6.18.65 6.18.64," ] && ok "waiting lists it, with what's released" || bad "waiting lists it, with what's released" "$(bash $S waiting 6.18)"
+[ "$(bash $S waiting | sort | tr '\n' ,)" = "$(bash $S waiting 6.18 | sort | tr '\n' ,)" ] && ok "waiting without a component lists every one" || bad "waiting without a component" "$(bash $S waiting)"
 bash $S promote 6.18 >/dev/null
 [ "$(ls apt-repo/pool/6.18 | tr '\n' ,)" = "linux-image-6.18.65-openframe_6.18.65-1_i386.deb,linux-image-openframe-6.18_6.18.65_i386.deb," ] && [ -z "$(ls apt-repo/pool/testing-6.18)" ] &&
 	ok "promote leaves one kernel, the new one, and testing empty" || bad "promote leaves one kernel" "$(ls -R apt-repo/pool)"

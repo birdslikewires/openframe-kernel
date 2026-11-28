@@ -72,9 +72,7 @@ To apply any changes you would like to make in a graphical interface.
 
 Every 6 hours `check.yml` looks for a new 6.18 kernel on kernel.org and builds it. A build
 publishes to kernel.openbeak.net's **testing** suite (`trixie-testing`) only, as a GitHub
-pre-release, and opens an issue, *Kernel x.y.z is ready to test*, assigned to the repository's
-owner. GitHub sends it to the app and by email. openframe-linux builds an image with the kernel
-and keeps it as an artifact.
+pre-release, and opens or updates the *Waiting in testing* issue, as OpenBeak's other repositories do (`scripts/testing-issue.sh`), assigned to the repository's owner. GitHub sends it to the app and by email. It lists what's waiting, the `News:` notes of the commits since the released kernel was built (`scripts/news.sh`, published beside the pool as the image's `news/<package>.news`, which the interface's Updates tab also shows), and what to check (`scripts/testing-checks.md`); its comment links upstream's ChangeLogs since the released kernel. openframe-linux builds an image with the kernel and keeps it as an artifact.
 
 Test units (OpenFrames whose `OF-BOOT/settings/test.txt` says `testing=yes`) install it overnight.
 Everyone else stays on the released kernel until **ok** is the reply to the issue (just the word):

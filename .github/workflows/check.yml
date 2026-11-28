@@ -9,7 +9,7 @@ on:
 permissions:
   contents: write
   pages: write
-  issues: write   # build.yml's "ready to test" issue
+  issues: write   # build.yml's testing issue
   actions: read   # build.yml asks for it (an earlier test kernel's artifact)
 
 env:

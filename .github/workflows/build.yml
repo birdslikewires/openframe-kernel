@@ -49,7 +49,7 @@ on:
 permissions:
   contents: write
   pages: write
-  issues: write   # the "ready to test" issue
+  issues: write   # the testing issue (scripts/testing-issue.sh)
   actions: read   # an earlier test kernel's artifact (from_run)
 
 concurrency:
@@ -315,6 +315,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0    # the notes since the released kernel (scripts/news.sh)
 
       - name: Install publishing tools
         run: |
@@ -401,7 +403,25 @@ jobs:
       # once it's promoted ("ok" in reply to its issue, promote.yml).
       - name: Update apt repository
         run: |
-          bash scripts/apt-suite.sh add "$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)" packages/*.deb
+          KCOMPONENT=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
+          # (this job's steps run in sh, the container's: no bash here)
+          # What's new, for of-update and the testing issue: the News: lines of the commits since the one the released kernel was built from (news/kernel.commits, a build and its commit to a line; for a kernel from before it, its release's tag), keyed to this build, beside the pool as the image's news/<package>.news
+          git config --global --add safe.directory "$PWD"
+          COMMIT=$(sed -n 's/^commit=//p' built/build-info.txt)
+          V="${KERNEL_VERSION}-${PKG_REVISION}"
+          REL=""
+          for d in apt-repo/pool/"${KCOMPONENT}"/linux-image-[0-9]*.deb; do if [ -f "$d" ]; then REL=$(dpkg-deb -f "$d" Version); fi; done
+          mkdir -p apt-repo/news
+          FROM=""
+          [ -z "$REL" ] || FROM=$(awk -v v="$REL" '$1 == v { c = $2 } END { print c }' apt-repo/news/kernel.commits 2>/dev/null)
+          [ -n "$FROM" ] || [ -z "$REL" ] || FROM=$(git rev-list -n 1 "v${REL%-*}" 2>/dev/null || true)
+          if [ -n "$FROM" ]; then bash scripts/news.sh "$FROM" "$COMMIT" "$V"; fi > "apt-repo/news/linux-image-${KERNEL_VERSION}-openframe.news"
+          echo "$V $COMMIT" >> apt-repo/news/kernel.commits
+          bash scripts/apt-suite.sh add "${KCOMPONENT}" packages/*.deb
+          # (an image's notes go with it: none kept for one in neither pool)
+          for f in apt-repo/news/linux-image-[0-9]*-openframe.news; do
+            ls apt-repo/pool/*/"$(basename "$f" .news)"_*.deb >/dev/null 2>&1 || rm -f "$f"
+          done
           bash scripts/apt-suite.sh listing
 
       - name: Push apt repository
@@ -453,32 +473,26 @@ jobs:
             --field event_type=kernel-released \
             --field client_payload[kernel_version]="${KERNEL_VERSION}"
 
-      # (The body starts with what's in testing: GitHub's push notification for a new issue
-      # shows the start of its body.)
-      # Tell Andy: an issue assigned to him (vars.TESTING_ASSIGNEE, or andydvsn), which GitHub sends to the app and
-      # by email. "ok" as a reply releases the kernel and its image to every OpenFrame
-      # (promote.yml); "no" keeps them back.
-      - name: Open the testing issue
+      # The testing issue, as OpenBeak's other repositories have it (scripts/testing-issue.sh): what's waiting, the notes since the released kernel and what to check (scripts/testing-checks.md), assigned to Andy (vars.TESTING_ASSIGNEE, or andydvsn), which GitHub sends to the app and by email. "ok" as a reply releases the kernel and its image to every OpenFrame (promote.yml); "no" keeps them back. The comment says where the image is building, and links upstream's changes since the released kernel.
+      - name: Update the testing issue
         env:
           GH_TOKEN: ${{ github.token }}
           ASSIGNEE: ${{ vars.TESTING_ASSIGNEE || 'andydvsn' }}   # who's told (the repository's owner is an organisation)
         run: |
-          R="${{ github.repository }}"
-          gh label create testing -R "$R" --color FBCA04 --description "Waiting in testing, reply ok to release, no to keep back" --force >/dev/null
-          TITLE="Kernel ${KERNEL_VERSION} is ready to test"
-          if gh issue list -R "$R" --label testing --state open --search "in:title \"${TITLE}\"" --json number -q '.[0].number' | grep -q .; then
-            echo "Its issue is open already."; exit 0
+          KCOMPONENT=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
+          MSG="Kernel ${KERNEL_VERSION}-${PKG_REVISION} is in testing. An image with it is building in openframe-linux, as **image build v${KERNEL_VERSION} (testing kernel)**: https://github.com/birdslikewires/openframe-linux/actions/workflows/build.yml (its artifact, when it's done)."
+          # upstream's changes, a ChangeLog for each stable release since the released kernel (in the same series)
+          REL=""
+          for d in apt-repo/pool/"${KCOMPONENT}"/linux-image-[0-9]*.deb; do if [ -f "$d" ]; then REL=$(dpkg-deb -f "$d" Version); fi; done
+          REL=${REL%-*}
+          if [ -n "$REL" ] && [ "${REL%.*}" = "${KCOMPONENT}" ] && [ "${KERNEL_VERSION%.*}" = "${KCOMPONENT}" ]; then
+            links="" n=$((${REL##*.} + 1))
+            while [ "$n" -le "${KERNEL_VERSION##*.}" ]; do
+              links="${links}${links:+, }https://cdn.kernel.org/pub/linux/kernel/v${KCOMPONENT%%.*}.x/ChangeLog-${KCOMPONENT}.${n}"
+              n=$((n + 1))
+            done
+            [ -z "$links" ] || MSG="${MSG}
+
+          What changed upstream since ${REL}: ${links}"
           fi
-          gh issue create -R "$R" --title "$TITLE" --label testing --assignee "$ASSIGNEE" --body "In testing: kernel ${KERNEL_VERSION}-${PKG_REVISION}.
-
-          It's in kernel.openbeak.net's testing suite. Test units (OF-BOOT/settings/test.txt says \`testing=yes\`) install it overnight and restart at about 4am; other OpenFrames don't have it.
-
-          An image with it is building in openframe-linux, as **image build v${KERNEL_VERSION} (testing kernel)**: https://github.com/birdslikewires/openframe-linux/actions/workflows/build.yml (its artifact, when it's done).
-
-          - [ ] Starts from a USB stick
-          - [ ] Starts from internal memory (OF1)
-          - [ ] Wi-Fi and Ethernet
-          - [ ] Touch, backlight, sound
-          - [ ] Sprite, and an app or two
-
-          Reply **ok** to release the kernel to every OpenFrame and publish that image as the latest release. Reply **no** to keep them back. (Just the word: anything longer is an ordinary comment.)"
+          bash scripts/testing-issue.sh "$MSG"

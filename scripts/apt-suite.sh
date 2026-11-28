@@ -4,7 +4,8 @@
 #
 #   apt-suite.sh add <component> <deb>...   kernel packages into the testing suite
 #   apt-suite.sh promote <component>        the testing suite's kernel into trixie (released)
-#   apt-suite.sh waiting <component>        what's in testing: package and version, a line each
+#   apt-suite.sh waiting [<component>]      what's in testing (every component's, without one): package, version
+#                                           and the released version of its kind, a line each
 #   apt-suite.sh listing                    the repository's index.html
 #
 # trixie is what every OpenFrame takes; trixie-testing what test units take as well
@@ -76,8 +77,22 @@ promote)
 	index trixie-testing
 	;;
 waiting)
+	# each package: its name, its version, and the released one of its kind (the image's name has the kernel's version in it, so the released image is the released linux-image-<x.y.z>-openframe, whatever x.y.z), or none
 	shopt -s nullglob
-	for d in "$REPO/pool/testing-$2"/*.deb; do printf '%s %s\n' "$(dpkg-deb -f "$d" Package)" "$(dpkg-deb -f "$d" Version)"; done
+	for t in "$REPO"/pool/testing-${2:-[0-9]*}; do
+		c=${t##*/testing-}
+		for d in "$t"/*.deb; do
+			p=$(dpkg-deb -f "$d" Package) r=""
+			case "$p" in
+				linux-image-openframe-*) kind="$p" ;;
+				linux-image-[0-9]*) kind="linux-image-[0-9]*" ;;
+				linux-headers-*) kind="linux-headers-*" ;;
+				*) kind="$p" ;;
+			esac
+			for rd in "$REPO/pool/$c"/${kind}_*.deb; do r=$(dpkg-deb -f "$rd" Version); done
+			printf '%s %s %s\n' "$p" "$(dpkg-deb -f "$d" Version)" "${r:-none}"
+		done
+	done
 	;;
 listing)
 	human() {

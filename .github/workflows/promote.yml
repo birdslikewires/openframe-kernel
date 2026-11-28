@@ -2,7 +2,7 @@ name: promote
 run-name: release (ok) or keep back (no) a kernel in testing
 
 # Releases a kernel from kernel.openbeak.net's testing suite to every OpenFrame: "ok" as the
-# reply to its "Kernel x.y.z is ready to test" issue (opened by build.yml), by Andy
+# reply to the "Waiting in testing" issue (scripts/testing-issue.sh, from build.yml), by Andy
 # (vars.TESTING_ASSIGNEE, or andydvsn), moves its packages from trixie-testing to trixie, makes its GitHub
 # release the latest, and has openframe-linux publish the image it built with that kernel
 # (kernel-promoted). "no" closes the issue and keeps it back. Comments from anyone else,
@@ -39,17 +39,18 @@ jobs:
       - name: Read the comment and the issue
         env:
           BODY: ${{ github.event.comment.body }}
-          TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           # The whole comment must be "ok" (promote) or "no" (reject), whatever its case or
           # punctuation: "ok, I'll try it tomorrow" is just a comment.
           word=$(printf '%s' "$BODY" | tr 'A-Z' 'a-z' | tr -d '[:space:][:punct:]')
           case "$word" in ok) word=promote ;; no) word=reject ;; *) echo "Not ok or no on its own: nothing to do."; word=none ;; esac
           echo "ACTION=$word" >> "$GITHUB_ENV"
-          # "Kernel 6.18.65 is ready to test": only a plain version goes on, into commands
-          version=$(printf '%s' "$TITLE" | sed -nE 's/^Kernel ([0-9]+\.[0-9]+(\.[0-9]+)?) is ready to test$/\1/p')
+          # The kernel the issue listed then, its metapackage's row of the table (| linux-image-openframe-6.18 | 6.18.66 | 6.18.65 |): only that is released, so nothing that reached testing after the issue was read goes out with it, and only a plain version goes on, into commands
+          version=$(printf '%s\n' "$ISSUE_BODY" | awk -F'|' 'NF >= 5 { p = $2; v = $3; gsub(/[ `]/, "", p); gsub(/[ `]/, "", v)
+            if (p ~ /^linux-image-openframe-[0-9]+\.[0-9]+$/) print v }' | grep -xE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
           if [ "$word" != none ] && [ -z "$version" ]; then
-            echo "This issue's title doesn't name a kernel: $TITLE"; exit 1
+            echo "The issue lists no kernel."; exit 1
           fi
           echo "KERNEL_VERSION=$version" >> "$GITHUB_ENV"
 
@@ -83,7 +84,7 @@ jobs:
           comp=$(echo "${KERNEL_VERSION}" | cut -d. -f1-2)
           waiting=$(bash scripts/apt-suite.sh waiting "$comp")
           echo "$waiting"
-          grep -q "^linux-image-openframe-${comp} ${KERNEL_VERSION}\$" <<< "$waiting" || {
+          grep -q "^linux-image-openframe-${comp} ${KERNEL_VERSION} " <<< "$waiting" || {
             echo "Testing doesn't hold kernel ${KERNEL_VERSION} (a later one replaced it?): not promoting."
             gh issue comment "$ISSUE" -R "$R" --body "Not promoted: testing doesn't hold ${KERNEL_VERSION} any more."
             exit 1; }
@@ -117,7 +118,8 @@ jobs:
         if: env.ACTION != 'none'
         run: |
           if [ "$ACTION" = promote ]; then
-            gh issue close "$ISSUE" -R "$R" --comment "Promoted: every OpenFrame installs kernel ${KERNEL_VERSION} overnight. openframe-linux is publishing its image as the latest release."
+            # (closed by testing-issue.sh, as OpenBeak's other repositories' are, with nothing left waiting)
+            ASSIGNEE="${{ vars.TESTING_ASSIGNEE || 'andydvsn' }}" GITHUB_REPOSITORY="$R" bash scripts/testing-issue.sh "Promoted: every OpenFrame installs kernel ${KERNEL_VERSION} overnight. openframe-linux is publishing its image as the latest release."
           else
             gh issue close "$ISSUE" -R "$R" --comment "Kept back: only test units have kernel ${KERNEL_VERSION}."
           fi
